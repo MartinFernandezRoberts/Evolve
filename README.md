@@ -1,5 +1,7 @@
 # Evolve
 
+> Fork no oficial de [pmotschmann/Evolve](https://github.com/pmotschmann/Evolve), conservado bajo MPL-2.0. Este repositorio explora un remaster visual opcional sin alterar las mecánicas ni la compatibilidad de guardados del juego original. No está afiliado al proyecto original ni a Nintendo.
+
 ## Play
 
 https://pmotschmann.github.io/Evolve/
