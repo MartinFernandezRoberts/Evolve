@@ -1,9 +1,12 @@
 require("esbuild")
   .build({
     logLevel: "info",
-    entryPoints: ["./src/main.js"],
+    entryPoints: {
+      main: "./src/main.js",
+      "remaster-demo": "./src/remaster/demo.js",
+    },
     bundle: true,
     minify: true,
-    outfile: "evolve/main.js",
+    outdir: "evolve",
   })
   .catch(() => process.exit(1));

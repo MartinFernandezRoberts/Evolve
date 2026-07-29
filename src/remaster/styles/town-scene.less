@@ -1,0 +1,614 @@
+// Estilos exclusivos de la demo del remaster. Se importan desde evolve.less,
+// permanecen aislados por .remaster-demo-page y no alteran la interfaz clásica.
+
+.remaster-demo-page {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+    color: #f7f1d4;
+    background:
+        radial-gradient(circle at 15% 0%, rgba(58, 143, 114, .35), transparent 34rem),
+        linear-gradient(155deg, #142f3c 0%, #1e4850 48%, #12333f 100%);
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+
+    * {
+        box-sizing: border-box;
+    }
+
+    .remaster-demo {
+        width: 100%;
+        max-width: 1840px;
+        margin: 0 auto;
+        padding: clamp(1rem, 2.4vw, 2.8rem);
+    }
+
+    .remaster-demo__intro {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 1rem;
+        margin: 0 auto 1rem;
+        max-width: 1660px;
+
+        h1,
+        p {
+            margin: 0;
+        }
+
+        h1 {
+            color: #ffe6a5;
+            font-size: clamp(1.35rem, 3vw, 2.5rem);
+            letter-spacing: .03em;
+            text-shadow: 0 3px 0 #4d3c2c, 0 5px 16px rgba(0, 0, 0, .4);
+        }
+
+        p {
+            margin-top: .35rem;
+            color: #b9dfd1;
+        }
+
+        a {
+            flex: 0 0 auto;
+            border: 2px solid #b7844d;
+            border-radius: .65rem;
+            padding: .55rem .8rem;
+            color: #fff3ce;
+            background: linear-gradient(135deg, #6a4631, #3c2c29);
+            box-shadow: inset 0 1px rgba(255, 235, 174, .3), 0 3px 0 #1b1d24;
+            text-decoration: none;
+        }
+
+        a:hover,
+        a:focus-visible {
+            border-color: #ffe39a;
+            color: #fff;
+        }
+    }
+
+    .remaster-demo__selection {
+        min-height: 1.25rem;
+        max-width: 1660px;
+        margin: 0 auto 1rem;
+        color: #b9dfd1;
+        font-size: .9rem;
+    }
+
+    .town-scene {
+        overflow: hidden;
+        max-width: 1660px;
+        margin: auto;
+        border: 3px solid #b9854e;
+        border-radius: 1.25rem;
+        background: linear-gradient(135deg, #4d302c, #2d292f 40%, #56372b);
+        box-shadow: inset 0 0 0 3px #1d2630, inset 0 0 0 7px rgba(245, 198, 116, .24), 0 1.4rem 3rem rgba(5, 17, 27, .45);
+    }
+
+    .town-scene__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem clamp(1rem, 2vw, 1.5rem);
+        border-bottom: 2px solid rgba(249, 209, 138, .4);
+        background:
+            repeating-linear-gradient(90deg, rgba(255, 235, 173, .06) 0 2px, transparent 2px 17px),
+            linear-gradient(180deg, #6d4934, #3e2e2c);
+    }
+
+    .town-scene__eyebrow,
+    .town-scene__panel-eyebrow {
+        margin: 0 0 .2rem;
+        color: #f3c36a;
+        font-size: .7rem;
+        font-weight: 700;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+    }
+
+    .town-scene__header h1,
+    .town-scene__panel h2,
+    .town-scene__subtitle {
+        margin: 0;
+    }
+
+    .town-scene__header h1 {
+        color: #fff1bd;
+        font-size: clamp(1.25rem, 2.3vw, 2rem);
+        text-shadow: 0 2px #51362b;
+    }
+
+    .town-scene__subtitle {
+        max-width: 42rem;
+        margin-top: .25rem;
+        color: #cce3d0;
+        font-size: .9rem;
+    }
+
+    .town-scene__resources {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(4.2rem, 1fr));
+        gap: .4rem;
+    }
+
+    .town-scene__resource {
+        min-width: 4.3rem;
+        border: 1px solid rgba(255, 229, 165, .32);
+        border-radius: .5rem;
+        padding: .35rem .5rem;
+        background: rgba(22, 38, 44, .58);
+        box-shadow: inset 0 1px rgba(255, 255, 255, .08);
+
+        strong,
+        span {
+            display: block;
+        }
+
+        strong {
+            color: var(--resource-accent);
+            font-size: 1rem;
+            line-height: 1.1;
+        }
+
+        span {
+            overflow: hidden;
+            color: #d5e6d5;
+            font-size: .68rem;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .town-scene__layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(275px, .3fr);
+    }
+
+    .town-scene__map-frame {
+        position: relative;
+        min-height: 36rem;
+        border-right: 2px solid rgba(249, 209, 138, .3);
+        background: #193f49;
+        isolation: isolate;
+    }
+
+    .town-scene__map {
+        display: block;
+        width: 100%;
+        height: 100%;
+        min-height: inherit;
+        cursor: grab;
+        touch-action: none;
+        user-select: none;
+    }
+
+    .town-scene__map.is-panning {
+        cursor: grabbing;
+    }
+
+    .town-scene__map:focus-visible {
+        outline: 3px solid #ffe391;
+        outline-offset: -6px;
+    }
+
+    .town-scene__toolbar {
+        position: absolute;
+        z-index: 4;
+        top: .8rem;
+        left: .8rem;
+        display: flex;
+        align-items: center;
+        gap: .25rem;
+        border: 1px solid rgba(255, 233, 172, .52);
+        border-radius: .55rem;
+        padding: .25rem;
+        background: rgba(37, 38, 45, .83);
+        box-shadow: 0 .2rem .7rem rgba(8, 20, 30, .36);
+    }
+
+    .town-scene__toolbar button {
+        min-width: 2rem;
+        min-height: 2rem;
+        border: 1px solid #c89350;
+        border-radius: .34rem;
+        color: #fff1c4;
+        background: linear-gradient(135deg, #805437, #493430);
+        box-shadow: inset 0 1px rgba(255, 231, 171, .25);
+        cursor: pointer;
+        font: inherit;
+        font-weight: 700;
+    }
+
+    .town-scene__toolbar button:hover,
+    .town-scene__toolbar button:focus-visible {
+        border-color: #ffec9d;
+        background: linear-gradient(135deg, #aa7041, #60402e);
+        outline: none;
+    }
+
+    .town-scene__zoom-label {
+        min-width: 3.2rem;
+        color: #caebdb;
+        font-size: .75rem;
+        text-align: center;
+    }
+
+    .town-scene__map-hint {
+        position: absolute;
+        z-index: 3;
+        right: .8rem;
+        bottom: .65rem;
+        margin: 0;
+        border-radius: .5rem;
+        padding: .35rem .55rem;
+        color: #d8eee3;
+        background: rgba(20, 44, 51, .75);
+        font-size: .7rem;
+        pointer-events: none;
+    }
+
+    .town-scene__tooltip {
+        position: absolute;
+        z-index: 7;
+        max-width: 18rem;
+        border: 1px solid #f5cf76;
+        border-radius: .45rem;
+        padding: .35rem .55rem;
+        color: #fff1c4;
+        background: rgba(28, 37, 42, .94);
+        box-shadow: 0 .3rem .8rem rgba(4, 20, 30, .4);
+        font-size: .77rem;
+        pointer-events: none;
+    }
+
+    .town-scene__panel {
+        min-height: 18rem;
+        padding: clamp(1rem, 2vw, 1.65rem);
+        background:
+            repeating-linear-gradient(0deg, rgba(255, 233, 172, .035) 0 1px, transparent 1px 9px),
+            linear-gradient(160deg, #273f45, #1c3039);
+    }
+
+    .town-scene__panel h2 {
+        color: #fff0bb;
+        font-size: clamp(1.3rem, 2vw, 1.85rem);
+        line-height: 1.05;
+        text-shadow: 0 2px #1d3037;
+    }
+
+    .town-scene__status {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        margin: .85rem 0;
+        border: 1px solid color-mix(in srgb, var(--district-accent) 74%, #fff);
+        border-radius: 99px;
+        padding: .3rem .55rem;
+        color: #e9f6e8;
+        background: rgba(9, 28, 36, .54);
+        font-size: .76rem;
+    }
+
+    .town-scene__status:before {
+        width: .55rem;
+        height: .55rem;
+        border-radius: 50%;
+        background: var(--district-accent);
+        box-shadow: 0 0 .45rem var(--district-accent);
+        content: '';
+    }
+
+    .town-scene__panel-summary {
+        margin: 0;
+        color: #dbeddf;
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    .town-scene__panel-detail {
+        margin: 1rem 0;
+        color: #a9c9c5;
+        font-size: .87rem;
+        line-height: 1.5;
+    }
+
+    .town-scene__mock-notice {
+        border-left: 3px solid #e8b85c;
+        padding: .65rem .75rem;
+        color: #f0d49c;
+        background: rgba(72, 60, 39, .4);
+        font-size: .8rem;
+        line-height: 1.4;
+    }
+
+    .town-scene__future-action {
+        width: 100%;
+        margin-top: 1rem;
+        border: 1px solid #718182;
+        border-radius: .5rem;
+        padding: .65rem;
+        color: #aebdbc;
+        background: #26353a;
+        cursor: not-allowed;
+        font: inherit;
+        font-size: .8rem;
+    }
+
+    .town-scene__terrain {
+        stroke: #78b778;
+        stroke-width: 12;
+    }
+
+    .town-scene__water-line {
+        fill: none;
+        stroke: #a5f1e2;
+        stroke-dasharray: 16 22;
+        stroke-linecap: round;
+        stroke-opacity: .68;
+        stroke-width: 5;
+        animation: remaster-water 4s linear infinite;
+    }
+
+    .town-scene__mountain {
+        stroke: #314e5b;
+        stroke-width: 7;
+    }
+
+    .town-scene__mountain-highlights path {
+        fill: none;
+        stroke: #d5e6d9;
+        stroke-linecap: round;
+        stroke-opacity: .52;
+        stroke-width: 11;
+    }
+
+    .town-scene__paths path {
+        fill: none;
+        stroke: #765338;
+        stroke-linecap: round;
+        stroke-width: 38;
+    }
+
+    .town-scene__paths path:after {
+        stroke: #d6a767;
+    }
+
+    .town-scene__paths path {
+        stroke-dasharray: 2 1;
+        filter: drop-shadow(0 4px 0 rgba(33, 72, 63, .38));
+    }
+
+    .town-scene__trees path {
+        fill: #276d59;
+        stroke: #164d48;
+        stroke-width: 3;
+    }
+
+    .town-scene__trees rect {
+        fill: #79533b;
+    }
+
+    .town-scene__rocks path {
+        fill: #8e9fa2;
+        stroke: #60767c;
+        stroke-width: 4;
+    }
+
+    .town-node {
+        cursor: pointer;
+        outline: none;
+    }
+
+    .town-node__focus {
+        fill: none;
+        stroke: #fff0a9;
+        stroke-dasharray: 9 8;
+        stroke-width: 5;
+        opacity: 0;
+    }
+
+    .town-node:hover .town-node__focus,
+    .town-node:focus .town-node__focus,
+    .town-node.is-selected .town-node__focus {
+        opacity: 1;
+    }
+
+    .town-node:hover .town-art,
+    .town-node:focus .town-art,
+    .town-node.is-selected .town-art {
+        filter: saturate(1.18) brightness(1.1);
+    }
+
+    .town-node__marker circle {
+        stroke: #fff0b7;
+        stroke-width: 3;
+    }
+
+    .town-node__marker text {
+        fill: #19333b;
+        font-family: "Trebuchet MS", sans-serif;
+        font-size: 16px;
+        font-weight: 800;
+    }
+
+    .town-node__label rect {
+        fill: rgba(23, 47, 52, .88);
+        stroke: rgba(255, 232, 171, .65);
+        stroke-width: 2;
+    }
+
+    .town-node__label text {
+        fill: #fff1c4;
+        font-family: "Trebuchet MS", sans-serif;
+        font-size: 15px;
+        font-weight: 700;
+        pointer-events: none;
+    }
+
+    .town-art__shadow {
+        fill: rgba(17, 56, 58, .5);
+    }
+
+    .town-art__window,
+    .town-art__lens,
+    .town-art__fountain {
+        fill: #70dce0;
+        stroke: #2d6b7b;
+        stroke-width: 3;
+    }
+
+    .town-art__field {
+        fill: #bfd85c;
+        stroke: #5c9854;
+        stroke-width: 4;
+    }
+
+    .town-art__furrow,
+    .town-art__mill,
+    .town-art__crane,
+    .town-art__cut,
+    .town-art__column,
+    .town-art__arch,
+    .town-art__battlement,
+    .town-art__log {
+        fill: none;
+        stroke: #55423d;
+        stroke-linecap: round;
+        stroke-width: 4;
+    }
+
+    .town-art__pine {
+        fill: #31805d;
+        stroke: #1f5e51;
+        stroke-width: 4;
+    }
+
+    .town-art__trunk {
+        stroke: #754a35;
+        stroke-width: 7;
+    }
+
+    .town-art__dome {
+        fill: #78c8d2;
+        stroke: #386d80;
+        stroke-width: 4;
+    }
+
+    .town-art__flag {
+        fill: #f3c45d;
+        stroke: #68463a;
+        stroke-width: 3;
+        animation: remaster-flag 2.6s ease-in-out infinite;
+        transform-box: fill-box;
+        transform-origin: left center;
+    }
+
+    .town-art__tower {
+        fill: #a97861;
+        stroke: #694b42;
+        stroke-width: 4;
+    }
+
+    .town-art__metal {
+        fill: #80c7c0;
+        stroke: #4a7473;
+        stroke-width: 3;
+    }
+
+    .town-art__smoke {
+        fill: none;
+        stroke: rgba(213, 229, 215, .75);
+        stroke-linecap: round;
+        stroke-width: 9;
+        animation: remaster-smoke 3.2s ease-in-out infinite;
+    }
+
+    @keyframes remaster-water {
+        to { stroke-dashoffset: -38; }
+    }
+
+    @keyframes remaster-flag {
+        50% { transform: skewY(-7deg) scaleX(1.08); }
+    }
+
+    @keyframes remaster-smoke {
+        50% { opacity: .45; transform: translate(-5px, -9px); }
+    }
+
+    @media (max-width: 1180px) {
+        .town-scene__header {
+            align-items: start;
+            flex-direction: column;
+        }
+
+        .town-scene__resources {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 960px) {
+        .town-scene__layout {
+            grid-template-columns: 1fr;
+        }
+
+        .town-scene__map-frame {
+            min-height: 32rem;
+            border-right: 0;
+            border-bottom: 2px solid rgba(249, 209, 138, .3);
+        }
+    }
+
+    @media (max-width: 560px) {
+        .remaster-demo {
+            padding: .75rem;
+        }
+
+        .remaster-demo__intro {
+            align-items: start;
+            flex-direction: column;
+        }
+
+        .town-scene {
+            border-radius: .85rem;
+        }
+
+        .town-scene__header {
+            padding: .85rem;
+        }
+
+        .town-scene__resources {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .town-scene__resource {
+            min-width: 0;
+        }
+
+        .town-scene__map-frame {
+            min-height: 22rem;
+        }
+
+        .town-scene__toolbar {
+            top: .5rem;
+            left: .5rem;
+        }
+
+        .town-scene__map-hint {
+            display: none;
+        }
+
+        .town-scene__panel {
+            min-height: 0;
+            padding: 1rem;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *:before,
+        *:after {
+            scroll-behavior: auto !important;
+            animation-duration: .001ms !important;
+            animation-iteration-count: 1 !important;
+        }
+    }
+}
