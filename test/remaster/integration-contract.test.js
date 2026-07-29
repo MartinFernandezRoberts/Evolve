@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { assertProductionBundleHasNoMocks } from '../../buildRemasterValidation.js';
 import { createGameActionBridge } from '../../src/remaster/adapters/game-action-bridge.js';
 import { captureTownActionParityState, captureTownSaveParityState, compareTownActionParity } from '../../src/remaster/adapters/town-action-parity-harness.js';
 import { getRemasterPreferences, migrateLegacyRemasterPreferences, setRemasterEnabled, setRemasterView } from '../../src/remaster/config/remaster-preferences.js';
 import { resolveSettlementVisualProgression } from '../../src/remaster/config/visual-progression.js';
-import { createMockTownSnapshot } from '../../src/remaster/config/town-map.js';
 import { getPopulationVisualCount, getSpeciesArchitectureProfile } from '../../src/remaster/config/town-life-config.js';
 import { KenneyTownAssets } from '../../src/remaster/assets/kenney-assets.js';
 
@@ -107,22 +108,34 @@ function testVisualProgressionUsesOnlySnapshotSignals() {
     assert.equal(resolveSettlementVisualProgression(visualSnapshot(1, [{ id: 'fission', level: 1 }], [{ id: 'fission_power', district: 'industry', count: 1 }])).id, 'electrified');
 }
 
-function testVisualScenarioMatrix() {
-    const fresh = createMockTownSnapshot('new');
-    const small = createMockTownSnapshot('small');
-    const intermediate = createMockTownSnapshot('intermediate');
-    const industrial = createMockTownSnapshot('industrial');
-    const aquatic = createMockTownSnapshot('aquatic');
-
-    assert.equal(fresh.visualBuildings.every((building) => building.count === 0), true);
-    assert.equal(getPopulationVisualCount(small.context.population.amount), 2);
-    assert.equal(getPopulationVisualCount(intermediate.context.population.amount), 6);
-    assert.equal(resolveSettlementVisualProgression(industrial).id, 'industrial');
-    assert.equal(getSpeciesArchitectureProfile(aquatic.context.species).key, 'aquatic');
+function testVisualScenarioHelpers() {
+    assert.equal(getPopulationVisualCount(6), 2);
+    assert.equal(getPopulationVisualCount(32), 6);
+    assert.equal(getSpeciesArchitectureProfile({ type: 'aquatic' }).key, 'aquatic');
 }
 
 function testCuratedAssetsUseLocalBuildPaths() {
     assert.equal(Object.values(KenneyTownAssets).every((asset) => asset.startsWith('evolve/remaster-assets/kenney/')), true);
+}
+
+function placeholders(value) {
+    return [...String(value).matchAll(/%\d+(?!\d)/g)].map((match) => match[0]).sort();
+}
+
+function testRemasterLocaleParity() {
+    const stringsPath = path.resolve(__dirname, '../../strings');
+    const base = JSON.parse(fs.readFileSync(path.join(stringsPath, 'strings.json'), 'utf8'));
+    const remasterKeys = Object.keys(base).filter((key) => key.startsWith('remaster_'));
+    const localeFiles = fs.readdirSync(stringsPath).filter((file) => /^strings\.[\w-]+\.json$/.test(file));
+
+    assert.ok(remasterKeys.length > 0, 'the base locale must declare remaster keys');
+    localeFiles.forEach((file) => {
+        const locale = JSON.parse(fs.readFileSync(path.join(stringsPath, file), 'utf8'));
+        remasterKeys.forEach((key) => {
+            assert.ok(Object.hasOwn(locale, key), `${file} is missing ${key}`);
+            assert.deepEqual(placeholders(locale[key]), placeholders(base[key]), `${file} changes placeholders for ${key}`);
+        });
+    });
 }
 
 testPreferencesDoNotMutateSaveSchema();
@@ -130,6 +143,7 @@ testActionBridgeOnlyDelegates();
 testParityReducers();
 testMockImportBuildGuard();
 testVisualProgressionUsesOnlySnapshotSignals();
-testVisualScenarioMatrix();
+testVisualScenarioHelpers();
 testCuratedAssetsUseLocalBuildPaths();
+testRemasterLocaleParity();
 console.log('remaster integration contract tests passed');

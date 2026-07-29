@@ -6066,7 +6066,7 @@ function getCityVisualWorkers(id){
         const defaultWorker = global.civic[global.civic.d_job];
         return {
             id: job,
-            label: worker.name || loc(`job_${job}`),
+            label: loc(`job_${job}`) === `job_${job}` ? (worker.name || job) : loc(`job_${job}`),
             description: typeof job_desc[job] === 'function' ? htmlToText(job_desc[job](false)) : '',
             workers: Number(worker.workers || 0),
             assigned: Number(worker.assigned ?? worker.workers ?? 0),
@@ -6181,7 +6181,7 @@ function getCityVisualBuildingState(id){
         return { label: id, unlocked: false, affordable: null };
     }
     const unlocked = checkCityRequirements(id) && checkTechQualifications(action,id);
-    const label = typeof action.title === 'function' ? action.title() : action.title;
+    const label = getCityVisualTitle(id, action);
     const detail = unlocked || global.city[id]?.count > 0 ? getCityVisualBuildingDetail(id,action) : null;
     return {
         label: typeof label === 'string' ? label : id,
@@ -6196,11 +6196,32 @@ function getCityVisualBuildingState(id){
 /** Etiqueta de una estructura construida que no necesariamente tiene arte propio. */
 function getTownBuiltBuildingState(id){
     const action = actions.city[id];
-    const label = action ? (typeof action.title === 'function' ? action.title() : action.title) : id;
+    const label = getCityVisualTitle(id, action);
     return {
         label: typeof label === 'string' ? label : id,
         state: global.city[id]?.count > 0 ? 'built' : 'available'
     };
+}
+
+// Las pocas acciones visuales cuyo título original se resolvió al arrancar
+// guardan aquí únicamente la clave ya existente. Las variantes de especie,
+// estación o universo siguen llamando al título original en cada lectura.
+const visualStaticTitleKeys = Object.freeze({
+    library: 'city_library',
+    university: 'city_university',
+    foundry: 'city_foundry',
+    fission_power: 'city_fission_power'
+});
+
+function getCityVisualTitle(id, action){
+    if (!action){
+        return id;
+    }
+    if (typeof action.title === 'function'){
+        return action.title();
+    }
+    const key = visualStaticTitleKeys[id];
+    return key ? loc(key) : action.title;
 }
 
 /** Presentación de un recurso usando el mismo formato y orden de la UI base. */
@@ -6209,7 +6230,9 @@ function getTownResourceState(id, resource, order){
     const hasCapacity = resource.max >= 0;
     const maximum = hasCapacity ? sizeApproximation(resource.max,0) : '';
     const diff = sizeApproximation(resource.diff,2);
-    const label = resource.name || id;
+    const resourceKey = `resource_${id}_name`;
+    const translated = loc(resourceKey);
+    const label = translated === resourceKey ? (resource.name || id) : translated;
     const warning = hasCapacity && resource.amount >= resource.max
         ? 'full'
         : (resource.amount <= 0 && resource.diff < 0 ? 'depleted' : (resource.diff < 0 ? 'negative' : 'none'));
@@ -6236,7 +6259,7 @@ function getTownWorkerState(id, worker){
     const defaultWorker = global.civic[global.civic.d_job];
     const adjustable = id !== 'garrison' && worker.display && !(global.race['warlord'] && id === 'miner');
     return {
-        label: worker.name || loc(`job_${id}`),
+        label: loc(`job_${id}`) === `job_${id}` ? (worker.name || id) : loc(`job_${id}`),
         description: typeof job_desc[id] === 'function' ? htmlToText(job_desc[id](false)) : '',
         canAssign: Boolean(adjustable && defaultWorker && defaultWorker.workers > 0 && (worker.max === -1 || worker.workers < worker.max)),
         canRemove: Boolean(adjustable && worker.workers > 0)
@@ -6245,7 +6268,7 @@ function getTownWorkerState(id, worker){
 
 function getTownTechnologyState(id){
     const action = actions.tech[id];
-    const label = action ? (typeof action.title === 'function' ? action.title() : action.title) : id;
+    const label = getCityVisualTitle(id, action);
     return {
         label: typeof label === 'string' ? label : id,
         era: typeof action?.era === 'string' ? action.era : null
@@ -6269,42 +6292,6 @@ function getTownEnvironmentState(){
     };
 }
 
-function getTownSceneTexts(){
-    return {
-        visualTitle: loc('remaster_visual_title'),
-        graphicalView: loc('remaster_graphical_view'),
-        classicView: loc('remaster_classic_view'),
-        mapControls: loc('remaster_map_controls'),
-        zoomOut: loc('remaster_zoom_out'),
-        zoomIn: loc('remaster_zoom_in'),
-        resetView: loc('remaster_reset_view'),
-        panHint: loc('remaster_pan_hint'),
-        mapLabel: loc('remaster_map_label'),
-        visibleResources: loc('tab_resources'),
-        civilizationView: loc('remaster_civilization_view'),
-        districtBuildings: loc('remaster_district_buildings'),
-        noBuildings: loc('remaster_no_buildings'),
-        available: loc('remaster_available'),
-        noResources: loc('remaster_no_resources'),
-        backToDistrict: loc('remaster_back_to_district'),
-        quantity: loc('remaster_quantity'),
-        currentCost: loc('remaster_current_cost'),
-        sufficientResources: loc('remaster_sufficient_resources'),
-        insufficientResources: loc('remaster_insufficient_resources'),
-        buildMaximum: loc('remaster_build_maximum'),
-        energyGenerated: loc('remaster_energy_generated'),
-        energyUsed: loc('remaster_energy_used'),
-        associatedWorkers: loc('remaster_associated_workers'),
-        enabled: loc('remaster_enabled'),
-        disabled: loc('remaster_disabled'),
-        noQueue: loc('remaster_no_queue'),
-        construct: loc('construct'),
-        activate: loc('active'),
-        deactivate: loc('not_active'),
-        queue: loc('queue')
-    };
-}
-
 function getTownContextState(){
     const species = races[global.race.species] || {};
     const biomeId = global.city.biome;
@@ -6313,7 +6300,6 @@ function getTownContextState(){
     return {
         title: loc('remaster_visual_title'),
         subtitle: loc('remaster_scene_subtitle',[stage]),
-        texts: getTownSceneTexts(),
         speciesLabel: species.name || global.race.species,
         biomeLabel: biomeId ? loc(`biome_${biomeId}_name`) : null,
         planet: species.home || null,

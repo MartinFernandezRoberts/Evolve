@@ -3,6 +3,13 @@ import { global, save } from './vars.js';
 let strings;
 getString(global.settings.locale);
 
+/**
+ * Browser event emitted after the original string pack has been replaced.
+ * Consumers that render outside Vue (such as the optional remaster scene) can
+ * refresh their presentation without owning a second translation catalogue.
+ */
+export const LOCALE_CHANGE_EVENT = 'evolve:localechange';
+
 export function loc(key, variables) {
     let string = strings[key];
     if (!string) {
@@ -85,6 +92,22 @@ function getString(locale) {
 
     $.ajaxSetup({ async: true });
     strings = defaultString;
+}
+
+/**
+ * Reloads the original string source for a new locale and notifies optional
+ * presentation layers. This deliberately keeps the same base-pack, locale
+ * overlay and user string-pack semantics used during startup.
+ *
+ * @param {string} locale Locale id declared in `locales`.
+ */
+export function setLocale(locale) {
+    getString(locale);
+    if (typeof document !== 'undefined') {
+        document.dispatchEvent(new CustomEvent(LOCALE_CHANGE_EVENT, {
+            detail: { locale }
+        }));
+    }
 }
 
 export const locales = {

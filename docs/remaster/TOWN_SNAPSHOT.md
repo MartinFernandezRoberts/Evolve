@@ -21,7 +21,6 @@ producción, requisitos, asequibilidad ni escrituras.
 | `contractVersion` | Versión del DTO. | Rechazar una forma incompatible. |
 | `source` | `'mock'` o `'engine'`. | Identificar demo y partida real. |
 | `title`, `subtitle` | Encabezado de la vista. | HUD de la escena. |
-| `texts` | Cadenas del shell visual resueltas por `loc()`. | Evita textos de juego hardcodeados en componentes. |
 | `resources` | Recursos visibles en el orden original: identificador, nombre, monograma propio, tooltip, cantidades originales, formato original, tendencia, aviso, desbloqueo y comercio cuando existe. | Barra dinámica completa y recursos requeridos por el edificio seleccionado. |
 | `districts` | Diez distritos con posición y arte SVG propios, contador y edificios agrupados. | Nodos, marcas y panel lateral. |
 | `visualBuildings` | Edificios reales del registro con nombre localizado, cantidad, actividad, bloqueo, coste siguiente, cola, energía, empleo y asequibilidad originales. | Edificio SVG, parcela disponible, estado, contador y panel. |

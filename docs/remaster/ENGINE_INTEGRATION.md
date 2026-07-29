@@ -57,6 +57,21 @@ sincronizar el estado como respaldo para restauraciones del navegador.
 `TownScene.setSnapshot()` actualiza recursos, marcas y panel de forma
 diferencial; no reconstruye el mapa salvo que cambie su estructura visual.
 
+## Localizacion en caliente y selector de vista
+
+`loc()` sigue siendo la unica funcion de traduccion. `setLocale()` recarga el
+paquete original y emite `evolve:localechange`; el gestor reetiqueta el selector
+y pide un snapshot actualizado sin recargar ni reiniciar el motor. El contrato
+conserva ids estables para acciones, edificios, recursos y distritos; las
+cadenas de interfaz se resuelven al renderizar o mediante lectores originales.
+
+El selector se inserta como primer hijo de `#city`. Es el lugar menos invasivo:
+`drawCity()` ya reconstruye ese contenedor, no se altera la navegacion global y
+el control permanece visible en ambas vistas. Sus botones usan claves
+localizadas, `aria-pressed` y la preferencia versionada externa al save. Fuera
+de la pestana de ciudad el selector no se monta; la UI clasica es el fallback
+de las etapas no soportadas.
+
 ## Acciones delegadas
 
 Los controles visuales reciben un `GameActionBridge` inmutable. Sus wrappers

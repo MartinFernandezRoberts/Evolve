@@ -210,7 +210,6 @@ export function createGameTownSnapshot(gameState, engineReader = {}) {
         source: 'engine',
         title: typeof contextPresentation.title === 'string' ? contextPresentation.title : 'Civilization',
         subtitle: typeof contextPresentation.subtitle === 'string' ? contextPresentation.subtitle : '',
-        texts: contextPresentation.texts && typeof contextPresentation.texts === 'object' ? { ...contextPresentation.texts } : {},
         resources,
         districts: TOWN_DISTRICT_LAYOUT.map((layout) => makeDistrict(layout, city, engineReader)),
         visualBuildings,

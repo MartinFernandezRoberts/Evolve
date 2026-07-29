@@ -155,7 +155,6 @@ export const TOWN_SCENE_CONTRACT_VERSION = 3;
  * @property {'mock'|'engine'} source Origen explícito de los datos.
  * @property {string} title Título de la escena ya localizado.
  * @property {string} subtitle Texto contextual ya localizado.
- * @property {Record<string, string>} texts Cadenas del shell visual localizadas por el puente.
  * @property {TownResource[]} resources Datos resumidos de sólo lectura.
  * @property {TownDistrict[]} districts Distritos renderizables.
  * @property {TownVisualBuilding[]} visualBuildings Edificios reales admitidos por BuildingVisualRegistry.

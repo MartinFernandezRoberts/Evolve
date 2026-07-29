@@ -1,4 +1,5 @@
 import { isTownSceneSnapshot } from '../adapters/town-scene-contracts.js';
+import { loc } from '../../locale.js';
 import { preloadKenneyTownAssets } from '../assets/kenney-assets.js';
 import { createTownBackdrop } from '../assets/town-art.js';
 import { TownBuildingLayer } from '../components/town-building-layer.js';
@@ -81,8 +82,6 @@ export class TownScene {
     }
 
     mount() {
-        const texts = this.snapshot.texts || {};
-        const text = (key, fallback) => typeof texts[key] === 'string' ? texts[key] : fallback;
         this.root.innerHTML = `
             <section class="town-scene" aria-labelledby="town-scene-title">
                 <header class="town-scene__header">
@@ -91,19 +90,19 @@ export class TownScene {
                         <h1 id="town-scene-title"></h1>
                         <p class="town-scene__subtitle"></p>
                     </div>
-                    <div class="town-scene__resources" aria-label="${text('visibleResources', 'Resources')}"></div>
+                    <div class="town-scene__resources"></div>
                 </header>
                 <div class="town-scene__layout">
                     <div class="town-scene__map-frame">
-                        <div class="town-scene__toolbar" role="group" aria-label="${text('mapControls', 'Town map controls')}">
-                            <button type="button" data-town-control="zoom-out" aria-label="${text('zoomOut', 'Zoom out')}">−</button>
-                            <button type="button" data-town-control="reset" aria-label="${text('resetView', 'Reset view')}">${text('resetView', 'View')}</button>
-                            <button type="button" data-town-control="zoom-in" aria-label="${text('zoomIn', 'Zoom in')}">+</button>
+                        <div class="town-scene__toolbar" role="group">
+                            <button type="button" data-town-control="zoom-out">−</button>
+                            <button type="button" data-town-control="reset"></button>
+                            <button type="button" data-town-control="zoom-in">+</button>
                             <span class="town-scene__zoom-label" aria-live="polite"></span>
                         </div>
-                        <p class="town-scene__map-hint">${text('panHint', 'Drag the terrain to pan. Use the wheel or buttons to zoom.')}</p>
-                        <nav class="town-scene__navigator" aria-label="${text('mapNavigation', 'District navigator')}"></nav>
-                        <svg class="town-scene__map" viewBox="0 0 1600 900" role="group" aria-label="${text('mapLabel', 'Interactive town map')}" tabindex="0">
+                        <p class="town-scene__map-hint"></p>
+                        <nav class="town-scene__navigator"></nav>
+                        <svg class="town-scene__map" viewBox="0 0 1600 900" role="group" tabindex="0">
                             <g class="town-scene__world"></g>
                         </svg>
                         <div id="town-scene-tooltip" class="town-scene__tooltip" role="tooltip" hidden></div>
@@ -126,6 +125,8 @@ export class TownScene {
         this.zoomLabel = this.root.querySelector('.town-scene__zoom-label');
         this.navigator = this.root.querySelector('.town-scene__navigator');
         this.metricsOutput = this.root.querySelector('.town-scene__metrics');
+
+        this.refreshLocalization();
 
         if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
             this.reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -206,8 +207,7 @@ export class TownScene {
 
     updateSnapshotData(forcePanel) {
         const startedAt = this.metricsEnabled && typeof performance !== 'undefined' ? performance.now() : 0;
-        const texts = this.snapshot.texts || {};
-        this.eyebrow.textContent = this.snapshot.source === 'engine' ? (texts.visualTitle || 'Visual Remaster') : 'Mock prototype';
+        this.eyebrow.textContent = this.snapshot.source === 'engine' ? loc('remaster_visual_title') : loc('remaster_demo_data');
         this.title.textContent = this.snapshot.title;
         this.subtitle.textContent = this.snapshot.subtitle;
         this.syncResourceDisplay();
@@ -234,6 +234,29 @@ export class TownScene {
     setCommands(commands, onAction) {
         this.commands = commands || null;
         this.onAction = onAction || (() => {});
+    }
+
+    /** Refreshes only localizable chrome; state and camera stay untouched. */
+    refreshLocalization() {
+        if (!this.root) {
+            return;
+        }
+        this.resources?.setAttribute('aria-label', loc('tab_resources'));
+        const toolbar = this.root.querySelector('.town-scene__toolbar');
+        toolbar?.setAttribute('aria-label', loc('remaster_map_controls'));
+        this.root.querySelector('[data-town-control="zoom-out"]')?.setAttribute('aria-label', loc('remaster_zoom_out'));
+        this.root.querySelector('[data-town-control="zoom-in"]')?.setAttribute('aria-label', loc('remaster_zoom_in'));
+        const reset = this.root.querySelector('[data-town-control="reset"]');
+        if (reset) {
+            reset.setAttribute('aria-label', loc('remaster_reset_view'));
+            reset.textContent = loc('remaster_reset_view');
+        }
+        const hint = this.root.querySelector('.town-scene__map-hint');
+        if (hint) {
+            hint.textContent = loc('remaster_pan_hint');
+        }
+        this.navigator?.setAttribute('aria-label', loc('remaster_district_navigator'));
+        this.svg?.setAttribute('aria-label', loc('remaster_map_label'));
     }
 
     /** El gestor propaga visibilidad sin acoplar la capa SVG al game loop. */
@@ -323,7 +346,6 @@ export class TownScene {
                 buildings: this.snapshot.visualBuildings.filter((building) => building.district === district.id),
                 selectedBuilding,
                 commands: this.commands,
-                texts: this.snapshot.texts,
                 onSelectBuilding: (id) => this.selectBuilding(id),
                 onAction: (event) => this.handleBuildingAction(event),
                 onBack: () => this.selectDistrict(district.id, false)

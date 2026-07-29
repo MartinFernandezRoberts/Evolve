@@ -1,3 +1,5 @@
+import { loc } from '../../locale.js';
+
 function createElement(tag, className, text) {
     const element = document.createElement(tag);
     if (className) {
@@ -41,30 +43,26 @@ function createButton(label, focusKey, disabled, onClick, className = '') {
     return button;
 }
 
-function textFor(texts, key, fallback) {
-    return typeof texts?.[key] === 'string' ? texts[key] : fallback;
-}
-
-function renderDistrictPanel(panel, district, source, buildings, onSelectBuilding, texts) {
-    const eyebrow = createElement('p', 'town-scene__panel-eyebrow', source === 'mock' ? 'Mock data' : textFor(texts, 'civilizationView', 'Civilization View'));
+function renderDistrictPanel(panel, district, source, buildings, onSelectBuilding) {
+    const eyebrow = createElement('p', 'town-scene__panel-eyebrow', source === 'mock' ? loc('remaster_demo_data') : loc('remaster_civilization_view'));
     const heading = createElement('h2', '', district.label);
     const status = createElement('p', 'town-scene__status', district.status);
     status.style.setProperty('--district-accent', district.accent);
     const summary = createElement('p', 'town-scene__panel-summary', district.summary);
     const detail = createElement('p', 'town-scene__panel-detail', district.detail);
-    const listHeading = createElement('h3', 'town-scene__subheading', textFor(texts, 'districtBuildings', 'District Buildings'));
+    const listHeading = createElement('h3', 'town-scene__subheading', loc('remaster_district_buildings'));
     const buildingList = createElement('ul', 'town-scene__building-picker');
 
     buildings.forEach((building) => {
         const item = document.createElement('li');
-        const state = building.count > 0 ? `×${building.count}` : (building.affordable === false ? textFor(texts, 'noResources', 'Insufficient resources') : textFor(texts, 'available', 'Available'));
+        const state = building.count > 0 ? `×${building.count}` : (building.affordable === false ? loc('remaster_no_resources') : loc('remaster_available'));
         const button = createButton(`${building.label} — ${state}`, `select-${building.id}`, false, () => onSelectBuilding(building.id), 'town-scene__building-choice');
         item.append(button);
         buildingList.append(item);
     });
 
     if (buildings.length === 0) {
-        buildingList.append(createElement('li', '', textFor(texts, 'noBuildings', 'No buildings are currently available in this district.')));
+        buildingList.append(createElement('li', '', loc('remaster_no_buildings')));
     }
 
     panel.append(eyebrow, heading, status, summary, detail, listHeading, buildingList);
@@ -80,18 +78,18 @@ function renderActionResult(result, onAction, type, buildingId) {
     }
 }
 
-function renderBuildingPanel(panel, building, source, commands, onAction, onBack, texts) {
+function renderBuildingPanel(panel, building, source, commands, onAction, onBack) {
     const detail = building.detail;
-    const eyebrow = createElement('p', 'town-scene__panel-eyebrow', source === 'mock' ? 'Mock data' : textFor(texts, 'civilizationView', 'Civilization View'));
-    const back = createButton(`← ${textFor(texts, 'backToDistrict', 'Back to district')}`, 'back-to-district', false, onBack, 'town-scene__back');
+    const eyebrow = createElement('p', 'town-scene__panel-eyebrow', source === 'mock' ? loc('remaster_demo_data') : loc('remaster_civilization_view'));
+    const back = createButton(`← ${loc('remaster_back_to_district')}`, 'back-to-district', false, onBack, 'town-scene__back');
     const heading = createElement('h2', '', building.label);
-    const count = createElement('p', 'town-scene__building-count', textFor(texts, 'quantity', 'Quantity: %0').replace('%0', String(building.count)));
+    const count = createElement('p', 'town-scene__building-count', loc('remaster_quantity', [building.count]));
     const description = createElement('p', 'town-scene__panel-detail', detail?.description || '');
 
     panel.append(eyebrow, back, heading, count, description);
 
     if (!detail) {
-        panel.append(createElement('div', 'town-scene__mock-notice', 'This isolated demo does not execute game actions.'));
+        panel.append(createElement('div', 'town-scene__mock-notice', loc('remaster_demo_notice')));
         return;
     }
 
@@ -99,8 +97,8 @@ function renderBuildingPanel(panel, building, source, commands, onAction, onBack
         panel.append(createElement('p', 'town-scene__building-effect', detail.effect));
     }
 
-    const costState = detail.affordable ? textFor(texts, 'sufficientResources', 'Resources sufficient') : textFor(texts, 'insufficientResources', 'Resources insufficient');
-    const costHeading = createElement('h3', 'town-scene__subheading', `${textFor(texts, 'currentCost', 'Current Cost')} — ${costState}`);
+    const costState = detail.affordable ? loc('remaster_sufficient_resources') : loc('remaster_insufficient_resources');
+    const costHeading = createElement('h3', 'town-scene__subheading', `${loc('remaster_current_cost')} — ${costState}`);
     const costList = createElement('ul', `town-scene__cost-list ${detail.affordable ? 'is-affordable' : 'is-insufficient'}`);
     detail.costs.forEach((cost) => {
         costList.append(createElement('li', `is-${cost.status}`, cost.text));
@@ -112,35 +110,35 @@ function renderBuildingPanel(panel, building, source, commands, onAction, onBack
 
     const actionGroup = createElement('div', 'town-scene__action-group');
     actionGroup.setAttribute('role', 'group');
-    actionGroup.setAttribute('aria-label', `${textFor(texts, 'construct', 'Construct')} ${building.label}`);
+    actionGroup.setAttribute('aria-label', `${loc('construct')} ${building.label}`);
     detail.buildAmounts.forEach((amount) => {
-        actionGroup.append(createButton(`${textFor(texts, 'construct', 'Construct')} ${amount}`, `build-${building.id}-${amount}`, !detail.affordable || !commands?.build, () => {
+        actionGroup.append(createButton(`${loc('construct')} ${amount}`, `build-${building.id}-${amount}`, !detail.affordable || !commands?.build, () => {
             renderActionResult(commands.build(building.id, amount), onAction, 'build', building.id);
         }, 'town-scene__action--build'));
     });
     if (detail.maxBuild) {
-        actionGroup.append(createButton(textFor(texts, 'buildMaximum', 'Build maximum'), `build-${building.id}-max`, !detail.affordable || !commands?.buildMax, () => {
+        actionGroup.append(createButton(loc('remaster_build_maximum'), `build-${building.id}-max`, !detail.affordable || !commands?.buildMax, () => {
             renderActionResult(commands.buildMax(building.id), onAction, 'build', building.id);
         }, 'town-scene__action--build'));
     }
     panel.append(actionGroup);
 
     if (detail.energy) {
-        const energyLabel = detail.energy.direction === 'produced' ? textFor(texts, 'energyGenerated', 'Energy generated: %0') : textFor(texts, 'energyUsed', 'Energy used: %0');
-        const energy = createElement('p', 'town-scene__building-energy', energyLabel.replace('%0', String(detail.energy.value)));
+        const energyKey = detail.energy.direction === 'produced' ? 'remaster_energy_generated' : 'remaster_energy_used';
+        const energy = createElement('p', 'town-scene__building-energy', loc(energyKey, [detail.energy.value]));
         panel.append(energy);
     }
 
     if (detail.enabled) {
-        const powerHeading = createElement('h3', 'town-scene__subheading', `${textFor(texts, 'enabled', 'Enabled')}: ${detail.enabled.on} · ${textFor(texts, 'disabled', 'Disabled')}: ${detail.enabled.off}`);
+        const powerHeading = createElement('h3', 'town-scene__subheading', `${loc('remaster_enabled')}: ${detail.enabled.on} · ${loc('remaster_disabled')}: ${detail.enabled.off}`);
         const powerGroup = createElement('div', 'town-scene__action-group');
         powerGroup.setAttribute('role', 'group');
-        powerGroup.setAttribute('aria-label', `Estado de ${building.label}`);
+        powerGroup.setAttribute('aria-label', loc('remaster_building_status', [building.label]));
         powerGroup.append(
-            createButton(textFor(texts, 'activate', 'Active'), `power-${building.id}-on`, detail.enabled.off <= 0 || !commands?.setPower, () => {
+            createButton(loc('active'), `power-${building.id}-on`, detail.enabled.off <= 0 || !commands?.setPower, () => {
                 renderActionResult(commands.setPower(building.id, true), onAction, 'power', building.id);
             }, 'town-scene__action--power'),
-            createButton(textFor(texts, 'deactivate', 'Not Active'), `power-${building.id}-off`, detail.enabled.on <= 0 || !commands?.setPower, () => {
+            createButton(loc('not_active'), `power-${building.id}-off`, detail.enabled.on <= 0 || !commands?.setPower, () => {
                 renderActionResult(commands.setPower(building.id, false), onAction, 'power', building.id);
             }, 'town-scene__action--power')
         );
@@ -148,7 +146,7 @@ function renderBuildingPanel(panel, building, source, commands, onAction, onBack
     }
 
     if (detail.workers.length > 0) {
-        panel.append(createElement('h3', 'town-scene__subheading', textFor(texts, 'associatedWorkers', 'Associated Workers')));
+        panel.append(createElement('h3', 'town-scene__subheading', loc('remaster_associated_workers')));
         const workers = createElement('ul', 'town-scene__worker-list');
         detail.workers.forEach((worker) => {
             const item = createElement('li', 'town-scene__worker');
@@ -169,8 +167,8 @@ function renderBuildingPanel(panel, building, source, commands, onAction, onBack
     }
 
     const queue = createElement('p', `town-scene__queue ${detail.queue.count > 0 ? 'is-queued' : ''}`, detail.queue.count > 0
-        ? `${textFor(texts, 'queue', 'Queue')}: ${detail.queue.amount} / ${detail.queue.count}`
-        : textFor(texts, 'noQueue', 'No queue for this structure.'));
+        ? `${loc('queue')}: ${detail.queue.amount} / ${detail.queue.count}`
+        : loc('remaster_no_queue'));
     queue.setAttribute('aria-live', 'polite');
     panel.append(queue);
 }
@@ -183,7 +181,7 @@ function renderBuildingPanel(panel, building, source, commands, onAction, onBack
  * @param {HTMLElement} panel
  * @param {import('../adapters/town-scene-contracts.js').TownDistrict} district
  * @param {'mock'|'engine'} source
- * @param {{ buildings?: import('../adapters/town-scene-contracts.js').TownVisualBuilding[], selectedBuilding?: import('../adapters/town-scene-contracts.js').TownVisualBuilding|null, commands?: object, texts?: Record<string, string>, onSelectBuilding?: (id: string) => void, onAction?: (event: object) => void, onBack?: () => void }} [options]
+ * @param {{ buildings?: import('../adapters/town-scene-contracts.js').TownVisualBuilding[], selectedBuilding?: import('../adapters/town-scene-contracts.js').TownVisualBuilding|null, commands?: object, onSelectBuilding?: (id: string) => void, onAction?: (event: object) => void, onBack?: () => void }} [options]
  */
 export function renderTownPanel(panel, district, source, options = {}) {
     const focusKey = getFocusedControl(panel);
@@ -193,10 +191,10 @@ export function renderTownPanel(panel, district, source, options = {}) {
     const onAction = options.onAction || (() => {});
 
     if (options.selectedBuilding) {
-        renderBuildingPanel(panel, options.selectedBuilding, source, options.commands, onAction, options.onBack || (() => {}), options.texts);
+        renderBuildingPanel(panel, options.selectedBuilding, source, options.commands, onAction, options.onBack || (() => {}));
     }
     else {
-        renderDistrictPanel(panel, district, source, buildings, onSelectBuilding, options.texts);
+        renderDistrictPanel(panel, district, source, buildings, onSelectBuilding);
     }
     restoreFocusedControl(panel, focusKey);
 }

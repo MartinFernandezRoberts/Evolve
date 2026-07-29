@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Prototipo aislado del remaster visual no oficial de Evolve Idle.">
-    <title>Evolve — Pueblo de demostración</title>
+    <meta name="description" content="">
+    <title>Evolve</title>
     <link rel="icon" href="evolved.ico" type="image/x-icon">
     <link rel="stylesheet" href="evolve/evolve.css">
 </head>
@@ -12,14 +12,16 @@
     <main class="remaster-demo">
         <header class="remaster-demo__intro">
             <div>
-                <h1>Pueblo visual — prototipo</h1>
-                <p>Composición original con assets CC0 locales, independiente de la partida y de las acciones del motor.</p>
+                <h1 data-remaster-demo-title></h1>
+                <p data-remaster-demo-description></p>
             </div>
-            <a href="index.html">Abrir interfaz clásica</a>
+            <a href="index.html" data-remaster-demo-classic></a>
         </header>
-        <p id="town-demo-selection" class="remaster-demo__selection" aria-live="polite">Distrito seleccionado: Centro del poblado</p>
+        <p id="town-demo-selection" class="remaster-demo__selection" aria-live="polite"></p>
         <div id="town-demo-root"></div>
     </main>
+    <script src="https://unpkg.com/jquery@3.6.3/dist/jquery.min.js"></script>
+    <script src="lib/lz-string.min.js"></script>
     <script type="module" src="evolve/remaster-demo.js"></script>
 </body>
 </html>

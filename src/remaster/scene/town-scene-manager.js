@@ -1,4 +1,5 @@
 import { TownScene } from './town-scene.js';
+import { LOCALE_CHANGE_EVENT, loc } from '../../locale.js';
 
 const snapshotIntervalMs = 1000;
 
@@ -25,6 +26,7 @@ class TownSceneManager {
         this.boundClick = this.handleClick.bind(this);
         this.boundVisibilityChange = this.handleVisibilityChange.bind(this);
         this.boundResume = this.handleResume.bind(this);
+        this.boundLocaleChange = this.handleLocaleChange.bind(this);
     }
 
     /** @param {TownSceneManagerOptions} options */
@@ -36,25 +38,39 @@ class TownSceneManager {
 
     mount(view) {
         this.initialSnapshot = this.readSnapshot();
-        const texts = this.initialSnapshot.texts || {};
-        const text = (key, fallback) => typeof texts[key] === 'string' ? texts[key] : fallback;
         this.root = document.createElement('section');
         this.root.className = 'visual-remaster-root';
         this.root.innerHTML = `
-            <div class="visual-remaster__switcher" role="group" aria-label="${text('civilizationView', 'Civilization View')}">
-                <span class="visual-remaster__title">${text('visualTitle', 'Visual Remaster')}</span>
-                <button type="button" data-remaster-view="scene">${text('graphicalView', 'Graphical View')}</button>
-                <button type="button" data-remaster-view="classic">${text('classicView', 'Classic View')}</button>
+            <div class="visual-remaster__switcher" role="group">
+                <span class="visual-remaster__title"></span>
+                <button type="button" data-remaster-view="scene"></button>
+                <button type="button" data-remaster-view="classic"></button>
             </div>
             <div class="visual-remaster__scene-host"></div>
         `;
         this.sceneHost = this.root.querySelector('.visual-remaster__scene-host');
         this.root.addEventListener('click', this.boundClick);
         document.addEventListener('visibilitychange', this.boundVisibilityChange);
+        document.addEventListener(LOCALE_CHANGE_EVENT, this.boundLocaleChange);
         window.addEventListener('focus', this.boundResume);
         window.addEventListener('pageshow', this.boundResume);
-        this.host.append(this.root);
+        this.host.prepend(this.root);
+        this.refreshLocalizedChrome();
         this.setView(view);
+    }
+
+    refreshLocalizedChrome() {
+        if (!this.root) {
+            return;
+        }
+        const switcher = this.root.querySelector('.visual-remaster__switcher');
+        switcher?.setAttribute('aria-label', loc('remaster_civilization_view'));
+        const title = this.root.querySelector('.visual-remaster__title');
+        if (title) {
+            title.textContent = loc('remaster_visual_title');
+        }
+        this.root.querySelector('[data-remaster-view="scene"]')?.replaceChildren(loc('remaster_graphical_view'));
+        this.root.querySelector('[data-remaster-view="classic"]')?.replaceChildren(loc('remaster_classic_view'));
     }
 
     /** @param {'scene'|'classic'} view */
@@ -136,6 +152,15 @@ class TownSceneManager {
         }
     }
 
+    /** Rebuilds labels from the original locale source without leaving the view. */
+    handleLocaleChange() {
+        this.refreshLocalizedChrome();
+        if (this.view === 'scene') {
+            this.refreshSnapshot();
+            this.scene?.refreshLocalization();
+        }
+    }
+
     /** Reflects a command immediately instead of waiting for the one-second sample. */
     handleSceneAction() {
         this.refreshSnapshot();
@@ -174,6 +199,7 @@ class TownSceneManager {
         this.stopUpdates();
         this.destroyScene();
         document.removeEventListener('visibilitychange', this.boundVisibilityChange);
+        document.removeEventListener(LOCALE_CHANGE_EVENT, this.boundLocaleChange);
         window.removeEventListener('focus', this.boundResume);
         window.removeEventListener('pageshow', this.boundResume);
         this.root?.removeEventListener('click', this.boundClick);
