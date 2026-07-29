@@ -1,6 +1,6 @@
 import { isTownSceneSnapshot } from '../adapters/town-scene-contracts.js';
 import { createTownBackdrop } from '../assets/town-art.js';
-import { createTownNode, updateTownNodeSelection } from '../components/town-node.js';
+import { createTownNode, updateTownNode, updateTownNodeSelection } from '../components/town-node.js';
 import { renderTownPanel } from '../components/town-panel.js';
 
 const minimumZoom = 0.65;
@@ -13,13 +13,13 @@ function clamp(value, min, max) {
 }
 
 /**
- * Escena SVG independiente del motor. Recibe un contrato de snapshot para que
- * el futuro adaptador pueda sustituir los datos mock sin reescribir la UI.
+ * Escena SVG independiente del motor. Recibe un TownSnapshot ya transformado
+ * por el adaptador, de modo que los componentes no acceden al estado del motor.
  */
 export class TownScene {
     /**
      * @param {HTMLElement} root Elemento donde se monta la escena.
-     * @param {{ snapshot: import('../adapters/town-scene-contracts.js').TownSceneSnapshot, onSelectionChange?: (district: import('../adapters/town-scene-contracts.js').TownDistrict) => void }} options
+     * @param {{ snapshot: import('../adapters/town-scene-contracts.js').TownSnapshot, onSelectionChange?: (district: import('../adapters/town-scene-contracts.js').TownDistrict) => void }} options
      */
     constructor(root, options) {
         if (!root) {
@@ -33,6 +33,10 @@ export class TownScene {
         this.snapshot = options.snapshot;
         this.onSelectionChange = options.onSelectionChange || (() => {});
         this.nodes = [];
+        this.nodeById = new Map();
+        this.resourceNodes = new Map();
+        this.structureKey = '';
+        this.panelKey = '';
         this.zoom = 1;
         this.pan = { x: 0, y: 0 };
         this.selectedId = this.snapshot.districts[0]?.id || '';
@@ -49,11 +53,11 @@ export class TownScene {
             <section class="town-scene" aria-labelledby="town-scene-title">
                 <header class="town-scene__header">
                     <div>
-                        <p class="town-scene__eyebrow">Prototipo visual aislado</p>
+                        <p class="town-scene__eyebrow"></p>
                         <h1 id="town-scene-title"></h1>
                         <p class="town-scene__subtitle"></p>
                     </div>
-                    <div class="town-scene__resources" aria-label="Recursos de demostración"></div>
+                    <div class="town-scene__resources" aria-label="Recursos visibles"></div>
                 </header>
                 <div class="town-scene__layout">
                     <div class="town-scene__map-frame">
@@ -74,6 +78,7 @@ export class TownScene {
             </section>
         `;
 
+        this.eyebrow = this.root.querySelector('.town-scene__eyebrow');
         this.title = this.root.querySelector('#town-scene-title');
         this.subtitle = this.root.querySelector('.town-scene__subtitle');
         this.resources = this.root.querySelector('.town-scene__resources');
@@ -83,14 +88,16 @@ export class TownScene {
         this.tooltip = this.root.querySelector('.town-scene__tooltip');
         this.zoomLabel = this.root.querySelector('.town-scene__zoom-label');
 
-        this.renderSnapshot();
+        this.renderStructure();
+        this.updateSnapshotData(true);
         this.bindInteractions();
-        this.selectDistrict(this.selectedId);
     }
 
     /**
-     * Sustituye la presentación sin asumir de dónde proviene el snapshot.
-     * @param {import('../adapters/town-scene-contracts.js').TownSceneSnapshot} snapshot
+     * Actualiza sólo los datos que cambian. La geometría del mapa, SVG y
+     * listeners se reconstruyen únicamente si cambia la estructura visual.
+     *
+     * @param {import('../adapters/town-scene-contracts.js').TownSnapshot} snapshot
      */
     setSnapshot(snapshot) {
         if (!isTownSceneSnapshot(snapshot)) {
@@ -100,28 +107,28 @@ export class TownScene {
         if (!snapshot.districts.some((district) => district.id === this.selectedId)) {
             this.selectedId = snapshot.districts[0]?.id || '';
         }
-        this.renderSnapshot();
-        this.selectDistrict(this.selectedId);
+
+        const nextStructureKey = this.getStructureKey(snapshot);
+        const structureChanged = nextStructureKey !== this.structureKey;
+        if (structureChanged) {
+            this.renderStructure();
+        }
+        this.updateSnapshotData(structureChanged);
     }
 
-    renderSnapshot() {
-        this.title.textContent = this.snapshot.title;
-        this.subtitle.textContent = this.snapshot.subtitle;
-        this.resources.replaceChildren(...this.snapshot.resources.map((resource) => {
-            const item = document.createElement('div');
-            item.className = 'town-scene__resource';
-            item.style.setProperty('--resource-accent', resource.accent);
+    getStructureKey(snapshot) {
+        return snapshot.districts
+            .map((district) => `${district.id}:${district.art}:${district.position.x}:${district.position.y}:${district.label}`)
+            .join('|');
+    }
 
-            const value = document.createElement('strong');
-            value.textContent = resource.value;
-            const label = document.createElement('span');
-            label.textContent = resource.label;
-            item.append(value, label);
-            return item;
-        }));
-
+    renderStructure() {
+        this.structureKey = this.getStructureKey(this.snapshot);
         this.world.innerHTML = createTownBackdrop();
-        this.nodes = this.snapshot.districts.map((district) => {
+        this.nodes = [];
+        this.nodeById.clear();
+
+        this.snapshot.districts.forEach((district) => {
             const node = createTownNode(district, {
                 onSelect: (selectedDistrict, element) => {
                     this.selectDistrict(selectedDistrict.id);
@@ -131,9 +138,71 @@ export class TownScene {
                 onLeave: () => this.hideTooltip()
             });
             this.world.append(node);
-            return node;
+            this.nodes.push(node);
+            this.nodeById.set(district.id, node);
         });
         this.renderTransform();
+    }
+
+    updateSnapshotData(forcePanel) {
+        this.eyebrow.textContent = this.snapshot.source === 'engine' ? 'Visual Remaster' : 'Prototipo visual aislado';
+        this.title.textContent = this.snapshot.title;
+        this.subtitle.textContent = this.snapshot.subtitle;
+        this.syncResourceDisplay();
+
+        this.snapshot.districts.forEach((district) => {
+            const node = this.nodeById.get(district.id);
+            if (node) {
+                updateTownNode(node, district);
+            }
+        });
+        updateTownNodeSelection(this.nodes, this.selectedId);
+        this.renderSelectedPanel(forcePanel);
+    }
+
+    syncResourceDisplay() {
+        const visibleResources = this.snapshot.resources.slice(0, 6);
+        const ids = new Set(visibleResources.map((resource) => resource.id));
+
+        this.resourceNodes.forEach((node, id) => {
+            if (!ids.has(id)) {
+                node.remove();
+                this.resourceNodes.delete(id);
+            }
+        });
+
+        visibleResources.forEach((resource) => {
+            let node = this.resourceNodes.get(resource.id);
+            if (!node) {
+                node = document.createElement('div');
+                node.className = 'town-scene__resource';
+                const value = document.createElement('strong');
+                const label = document.createElement('span');
+                node.append(value, label);
+                this.resourceNodes.set(resource.id, node);
+            }
+            node.style.setProperty('--resource-accent', resource.accent);
+            const [value, label] = node.children;
+            if (value.textContent !== resource.value) {
+                value.textContent = resource.value;
+            }
+            if (label.textContent !== resource.label) {
+                label.textContent = resource.label;
+            }
+            this.resources.append(node);
+        });
+    }
+
+    renderSelectedPanel(force) {
+        const district = this.snapshot.districts.find((candidate) => candidate.id === this.selectedId);
+        if (!district) {
+            return;
+        }
+        const panelKey = JSON.stringify({ source: this.snapshot.source, district });
+        if (force || panelKey !== this.panelKey) {
+            this.panelKey = panelKey;
+            renderTownPanel(this.panel, district, this.snapshot.source);
+        }
     }
 
     bindInteractions() {
@@ -218,15 +287,18 @@ export class TownScene {
         this.zoomLabel.textContent = `${Math.round(this.zoom * 100)}%`;
     }
 
-    selectDistrict(id) {
+    selectDistrict(id, notify = true) {
         const district = this.snapshot.districts.find((candidate) => candidate.id === id);
         if (!district) {
             return;
         }
         this.selectedId = district.id;
+        this.panelKey = '';
         updateTownNodeSelection(this.nodes, district.id);
-        renderTownPanel(this.panel, district, this.snapshot.source);
-        this.onSelectionChange(district);
+        this.renderSelectedPanel(true);
+        if (notify) {
+            this.onSelectionChange(district);
+        }
     }
 
     showTooltip(district, element) {
@@ -257,5 +329,7 @@ export class TownScene {
         this.svg.removeEventListener('keydown', this.boundKeyDown);
         this.root.replaceChildren();
         this.nodes = [];
+        this.nodeById.clear();
+        this.resourceNodes.clear();
     }
 }

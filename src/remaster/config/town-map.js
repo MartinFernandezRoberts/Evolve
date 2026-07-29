@@ -1,6 +1,6 @@
 import { TOWN_SCENE_CONTRACT_VERSION } from '../adapters/town-scene-contracts.js';
 
-// Datos exclusivamente temporales para la demo. No representan global, acciones,
+// Datos exclusivamente temporales para la demo. No representan el estado del juego, acciones,
 // costes, requisitos ni valores reales de Evolve.
 const mockResources = [
     { id: 'provisions', label: 'Provisiones', value: '428', accent: '#f6c65f' },
@@ -138,7 +138,22 @@ export function createMockTownSnapshot() {
         resources: mockResources.map((resource) => ({ ...resource })),
         districts: mockDistricts.map((district) => ({
             ...district,
-            position: { ...district.position }
-        }))
+            position: { ...district.position },
+            buildings: []
+        })),
+        context: {
+            species: { id: 'mock', label: 'Muestra' },
+            biome: { id: 'grassland', label: 'Pradera' },
+            planet: 'Mundo de demostración',
+            season: 0,
+            weather: 0,
+            population: { amount: 32, max: 50, label: 'Habitantes' },
+            workers: [],
+            buildings: [],
+            technologies: [],
+            energy: { available: null, powered: null },
+            morale: { current: null, potential: null },
+            government: { id: null, label: null }
+        }
     };
 }

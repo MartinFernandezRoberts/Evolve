@@ -1,7 +1,8 @@
-// Estilos exclusivos de la demo del remaster. Se importan desde evolve.less,
-// permanecen aislados por .remaster-demo-page y no alteran la interfaz clásica.
+// Estilos de la escena del remaster. El contenedor de integración sólo se monta
+// al activar Visual Remaster; la demo reutiliza exactamente la misma escena.
 
-.remaster-demo-page {
+.remaster-demo-page,
+.visual-remaster-root {
     min-width: 320px;
     min-height: 100vh;
     margin: 0;
@@ -309,6 +310,14 @@
         color: #a9c9c5;
         font-size: .87rem;
         line-height: 1.5;
+    }
+
+    .town-scene__building-list {
+        margin: .85rem 0;
+        padding-left: 1.1rem;
+        color: #c6ddd2;
+        font-size: .8rem;
+        line-height: 1.45;
     }
 
     .town-scene__mock-notice {

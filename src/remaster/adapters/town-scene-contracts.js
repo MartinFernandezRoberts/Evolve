@@ -2,8 +2,8 @@
  * Contratos de frontera del remaster.
  *
  * Estos typedefs no importan ni leen el estado de Evolve. La demo usa el
- * snapshot mock de config/town-map.js; un adaptador futuro podrá producir el
- * mismo contrato desde el motor sin cambiar TownScene.
+ * snapshot mock de config/town-map.js; el adaptador de juego produce el mismo
+ * contrato desde una entrada de sólo lectura sin cambiar TownScene.
  */
 
 export const TOWN_SCENE_CONTRACT_VERSION = 1;
@@ -28,6 +28,17 @@ export const TOWN_SCENE_CONTRACT_VERSION = 1;
  * @property {string} label Texto ya localizado por quien produzca el snapshot.
  * @property {string} value Valor ya formateado, sin fórmulas en la escena.
  * @property {string} accent Color de presentación del recurso.
+ * @property {number} amount Cantidad original, sin transformación de reglas.
+ * @property {number} max Capacidad original del recurso.
+ * @property {number} diff Variación calculada por el motor.
+ */
+
+/**
+ * @typedef {Object} TownBuilding
+ * @property {string} id Identificador de la estructura original.
+ * @property {string} label Etiqueta de presentación.
+ * @property {number} count Cantidad construida según el estado original.
+ * @property {number|null} on Cantidad activa cuando la estructura la define.
  */
 
 /**
@@ -41,16 +52,34 @@ export const TOWN_SCENE_CONTRACT_VERSION = 1;
  * @property {TownPosition} position Posición puramente visual.
  * @property {TownArtKind} art Variante de SVG temporal y original.
  * @property {number} marker Cantidad ya calculada por quien produzca los datos.
+ * @property {TownBuilding[]} buildings Estructuras reales agrupadas sólo para presentación.
  */
 
 /**
- * @typedef {Object} TownSceneSnapshot
+ * @typedef {Object} TownSnapshotContext
+ * @property {{ id: string, label: string }} species Especie actual.
+ * @property {{ id: string|null, label: string|null }} biome Bioma actual.
+ * @property {string|null} planet Planeta de origen.
+ * @property {number|null} season Estación codificada por el motor.
+ * @property {number|null} weather Clima codificado por el motor.
+ * @property {{ amount: number, max: number, label: string }} population Recurso de población original.
+ * @property {{ id: string, workers: number, max: number|null }[]} workers Empleos con trabajadores.
+ * @property {TownBuilding[]} buildings Todas las estructuras urbanas construidas.
+ * @property {{ id: string, level: number }[]} technologies Tecnologías numéricas activas.
+ * @property {{ available: number|null, powered: boolean|null }} energy Estado de energía original disponible.
+ * @property {{ current: number|null, potential: number|null }} morale Moral original.
+ * @property {{ id: string|null, label: string|null }} government Gobierno actual.
+ */
+
+/**
+ * @typedef {Object} TownSnapshot
  * @property {number} contractVersion Versión del contrato de presentación.
  * @property {'mock'|'engine'} source Origen explícito de los datos.
  * @property {string} title Título de la escena ya localizado.
  * @property {string} subtitle Texto contextual ya localizado.
  * @property {TownResource[]} resources Datos resumidos de sólo lectura.
  * @property {TownDistrict[]} districts Distritos renderizables.
+ * @property {TownSnapshotContext} context Contexto de juego sólo de lectura.
  */
 
 /**
@@ -58,7 +87,7 @@ export const TOWN_SCENE_CONTRACT_VERSION = 1;
  * No valida reglas de juego: sólo protege la frontera de UI.
  *
  * @param {unknown} snapshot Posible snapshot de escena.
- * @returns {snapshot is TownSceneSnapshot}
+ * @returns {snapshot is TownSnapshot}
  */
 export function isTownSceneSnapshot(snapshot) {
     return Boolean(
@@ -66,6 +95,8 @@ export function isTownSceneSnapshot(snapshot) {
         typeof snapshot === 'object' &&
         snapshot.contractVersion === TOWN_SCENE_CONTRACT_VERSION &&
         Array.isArray(snapshot.resources) &&
-        Array.isArray(snapshot.districts)
+        Array.isArray(snapshot.districts) &&
+        snapshot.context &&
+        typeof snapshot.context === 'object'
     );
 }

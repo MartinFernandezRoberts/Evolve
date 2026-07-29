@@ -31,6 +31,8 @@ La página necesita el bundle generado `evolve/remaster-demo.js`; `npm run build
 
 Revisar la demo en 1920×1080, 1366×768, 1024×768 y 390×844. En anchos menores de 960px el panel pasa debajo del mapa; en móvil la cabecera, recursos y controles reducen su densidad sin ocultar la selección.
 
-## Siguiente integración
+## Integración actual
 
-`TownScene` recibe un `TownSceneSnapshot` documentado con JSDoc. El futuro adaptador del motor deberá producir ese contrato y delegar las acciones a la ruta original descrita en `ENGINE_INTEGRATION.md`; no debe reutilizar los datos mock ni añadir fórmulas a la escena.
+`TownScene` recibe un `TownSnapshot` documentado con JSDoc. El adaptador de juego produce el mismo contrato desde una entrada de sólo lectura y el prototipo puede abrirse también desde la pestaña de ciudad: activar **Visual Remaster** en Settings y seleccionar **Vista gráfica**. La demo conserva sus datos mock aislados.
+
+Esta fase aún no conecta compras: el panel visual es informativo y la vista clásica conserva las acciones originales. El contrato completo está en `TOWN_SNAPSHOT.md`.

@@ -1538,6 +1538,12 @@ if (typeof global.settings.tabLoad === 'undefined'){
 if (typeof global.settings.boring === 'undefined'){
     global.settings['boring'] = false;
 }
+if (typeof global.settings.visualRemaster === 'undefined'){
+    global.settings['visualRemaster'] = false;
+}
+if (!['scene','classic'].includes(global.settings.visualRemasterView)){
+    global.settings['visualRemasterView'] = 'scene';
+}
 if (!global.settings.hasOwnProperty('mtorder')){
     global.settings['mtorder'] = [];
 }

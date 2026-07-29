@@ -35,11 +35,26 @@ export function renderTownPanel(panel, district, source) {
         ? 'Este panel no lee ni escribe una partida. La conexión con acciones originales queda para una fase posterior.'
         : 'La conexión de acciones se habilitará mediante el adaptador del motor.';
 
+    const buildingList = document.createElement('ul');
+    buildingList.className = 'town-scene__building-list';
+    if (district.buildings.length > 0) {
+        district.buildings.forEach((building) => {
+            const item = document.createElement('li');
+            item.textContent = `${building.label}: ${building.count}`;
+            buildingList.append(item);
+        });
+    }
+    else {
+        const item = document.createElement('li');
+        item.textContent = 'Sin estructuras construidas.';
+        buildingList.append(item);
+    }
+
     const control = document.createElement('button');
     control.className = 'town-scene__future-action';
     control.type = 'button';
     control.disabled = true;
     control.textContent = 'Acción del motor — próxima fase';
 
-    panel.append(eyebrow, heading, status, summary, detail, notice, control);
+    panel.append(eyebrow, heading, status, summary, detail, buildingList, notice, control);
 }

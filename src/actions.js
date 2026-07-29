@@ -17,6 +17,8 @@ import { techList, techPath } from './tech.js';
 import { defineGovernor, govActive, removeTask, gov_tasks } from './governor.js';
 import { bioseed } from './resets.js';
 import { loadTab } from './index.js';
+import { createGameTownSnapshot } from './remaster/adapters/game-town-adapter.js';
+import { destroyTownScene, syncTownScene } from './remaster/scene/town-scene-manager.js';
 
 export const actions = {
     evolution: {
@@ -6013,9 +6015,11 @@ export function gainTech(action){
 export var cLabels = global.settings['cLabels'];
 export function drawCity(){
     if (!global.settings.tabLoad && (global.settings.civTabs !== 1 || global.settings.spaceTabs !== 0)){
+        destroyTownScene();
         return;
     }
     if (!global.settings.showCity){
+        destroyTownScene();
         return;
     }
     let city_buildings = {};
@@ -6076,6 +6080,17 @@ export function drawCity(){
     });
 
     cLabels = global.settings['cLabels'];
+
+    syncTownScene({
+        host: document.getElementById('city'),
+        enabled: global.settings.visualRemaster,
+        view: global.settings.visualRemasterView,
+        readSnapshot: () => createGameTownSnapshot(global),
+        onViewChange(view){
+            global.settings.visualRemasterView = view;
+            drawCity();
+        }
+    });
 }
 
 export function drawTech(){

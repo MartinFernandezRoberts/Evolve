@@ -175,6 +175,13 @@ export function mainVue(){
             toggleTabLoad(){
                 initTabs();
             },
+            toggleVisualRemaster(enabled){
+                global.settings.visualRemaster = enabled;
+                if (!['scene','classic'].includes(global.settings.visualRemasterView)){
+                    global.settings.visualRemasterView = 'scene';
+                }
+                drawCity();
+            },
             unpause(){
                 $(`#pausegame`).removeClass('play');
                 $(`#pausegame`).removeClass('pause');
@@ -1405,6 +1412,7 @@ export function index(){
         <b-switch class="setting" v-model="s.pause" @input="unpause"><span class="settings12" aria-label="${loc('settings12')}">{{ 'pause' | label }}</span></b-switch>
         <b-switch class="setting" v-model="s.mKeys"><span class="settings1" aria-label="${loc('settings1')}">{{ 'm_keys' | label }}</span></b-switch>
         <b-switch class="setting" v-model="s.cLabels"><span class="settings5" aria-label="${loc('settings5')}">{{ 'c_cat' | label }}</span></b-switch>
+        <b-switch class="setting" v-model="s.visualRemaster" @input="toggleVisualRemaster"><span>Visual Remaster</span></b-switch>
         <b-switch class="setting" v-model="s.alwaysPower"><span class="settings17" aria-label="${loc('settings17')}">{{ 'always_power' | label }}</span></b-switch>
         <b-switch class="setting" v-model="s.qKey"><span class="settings6" aria-label="${loc('settings6')}">{{ 'q_key' | label }}</span></b-switch>
         <b-switch class="setting" v-model="s.qAny"><span class="settings7" aria-label="${loc('settings7')}">{{ 'q_any' | label }}</span></b-switch>

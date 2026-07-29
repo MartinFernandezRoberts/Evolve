@@ -1,0 +1,71 @@
+// Integración de la escena con la pestaña de ciudad original. No se aplica
+// hasta que el gestor añade una de estas clases a #city.
+
+#city.visual-remaster-scene {
+    > .action,
+    > .city {
+        display: none !important;
+    }
+}
+
+.visual-remaster-root {
+    width: 100%;
+    margin: .5rem 0 1rem;
+
+    .visual-remaster__switcher {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: .45rem;
+        margin: 0 0 .55rem;
+        border: 2px solid #8f633d;
+        border-radius: .65rem;
+        padding: .45rem .6rem;
+        color: #f7e6b5;
+        background:
+            repeating-linear-gradient(90deg, rgba(255, 235, 173, .05) 0 2px, transparent 2px 14px),
+            linear-gradient(135deg, #51372d, #2d3034);
+        box-shadow: inset 0 1px rgba(255, 235, 174, .22), 0 .18rem .6rem rgba(0, 0, 0, .22);
+    }
+
+    .visual-remaster__title {
+        margin-right: auto;
+        color: #ffe6a5;
+        font-size: .85rem;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .visual-remaster__switcher button {
+        border: 1px solid #b9864d;
+        border-radius: .35rem;
+        padding: .35rem .55rem;
+        color: #fff1c4;
+        background: linear-gradient(135deg, #765039, #3f3030);
+        box-shadow: inset 0 1px rgba(255, 231, 171, .2);
+        cursor: pointer;
+        font: inherit;
+        font-size: .78rem;
+    }
+
+    .visual-remaster__switcher button:hover,
+    .visual-remaster__switcher button:focus-visible,
+    .visual-remaster__switcher button[aria-pressed="true"] {
+        border-color: #ffeb9c;
+        color: #fff;
+        background: linear-gradient(135deg, #9f6941, #59402e);
+        outline: none;
+    }
+
+    .visual-remaster__switcher button[aria-pressed="true"] {
+        box-shadow: inset 0 0 0 1px rgba(255, 235, 167, .4), 0 0 .45rem rgba(255, 202, 93, .28);
+    }
+}
+
+@media (max-width: 560px) {
+    .visual-remaster-root .visual-remaster__title {
+        width: 100%;
+        margin-right: 0;
+    }
+}

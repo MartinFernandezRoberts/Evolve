@@ -1,6 +1,6 @@
 # Arquitectura del remaster visual
 
-> Estado: propuesta inicial, sin implementación de la escena.
+> Estado: prototipo SVG conectado en modo de sólo lectura.
 >
 > Este es un fork no oficial de Evolve Idle. El remaster preserva el motor original y los avisos MPL-2.0; no está afiliado a Peter Motschmann ni a Nintendo.
 
@@ -42,7 +42,7 @@ Permanece como única autoridad de reglas. Conserva todas las mutaciones de esta
 
 ### Adaptador de estado
 
-Un módulo futuro, por ejemplo `src/remaster/civilization-adapter.js`, puede construir un snapshot sólo de lectura para la fase planetaria:
+`src/remaster/adapters/game-town-adapter.js` construye actualmente un `TownSnapshot` de sólo lectura para la fase planetaria a partir de un parámetro de estado explícito:
 
 - recursos visibles: nombre localizado, `amount`, `max`, `diff` y estado de visualización;
 - población, empleo y datos ambientales ya calculados por el juego;
@@ -73,7 +73,7 @@ La interacción debe mantener equivalencia funcional con la tarjeta clásica: un
 
 ### Assets y configuración
 
-Los assets estarán bajo una carpeta de fuente nueva, por ejemplo `src/remaster/assets/`, con manifest, procedencia y licencia por archivo. Sólo se aceptan SVG/CSS/placeholders propios o imágenes generadas para este fork. La preferencia del flag debe almacenarse fuera de `global.settings` y de la cadena `evolved`, en una clave local versionada como `evolve.remaster.ui.v1`; así no cambia el esquema de guardado, exportación ni importación del juego.
+Los assets están bajo `src/remaster/assets/`, con SVG/CSS temporales propios. Sólo se aceptan SVG/CSS/placeholders propios o imágenes generadas para este fork. Durante esta fase, `global.settings.visualRemaster` y `global.settings.visualRemasterView` usan la persistencia original de Settings con valores por defecto retrocompatibles; no se crea un formato de save independiente ni se modifica la codificación de importación/exportación.
 
 ### Pruebas
 
@@ -97,7 +97,7 @@ Para las acciones interactivas hace falta un cambio mínimo adicional y explíci
 
 ## Compatibilidad
 
-- No se modifica `global`, el contenido de `evolved`, ni el formato Base64/UTF-16 de importación/exportación.
+- No se modifica el formato Base64/UTF-16 de importación/exportación. Se añaden dos preferencias retrocompatibles al objeto de Settings original, con default apagado para saves anteriores.
 - La interfaz clásica sigue siendo fuente de verdad y fallback funcional.
 - Cambios de idioma, raza, planeta, tecnología, reset, partida importada o cambios de pestaña desmontan/reconstruyen sólo la capa visual; no recalculan el juego.
 - El bundle sigue construido por esbuild y los estilos por LESS, compatible con los comandos Windows existentes.
