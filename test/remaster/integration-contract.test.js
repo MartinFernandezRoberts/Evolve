@@ -3,8 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { assertProductionBundleHasNoMocks } from '../../buildRemasterValidation.js';
 import { createGameActionBridge } from '../../src/remaster/adapters/game-action-bridge.js';
+import { createGamePhaseSnapshot } from '../../src/remaster/adapters/game-phase-adapter.js';
 import { captureTownActionParityState, captureTownSaveParityState, compareTownActionParity } from '../../src/remaster/adapters/town-action-parity-harness.js';
 import { getRemasterPreferences, migrateLegacyRemasterPreferences, setRemasterEnabled, setRemasterView } from '../../src/remaster/config/remaster-preferences.js';
+import { resolvePhaseRoute } from '../../src/remaster/config/phase-routing.js';
 import { resolveSettlementVisualProgression } from '../../src/remaster/config/visual-progression.js';
 import { getPopulationVisualCount, getSpeciesArchitectureProfile } from '../../src/remaster/config/town-life-config.js';
 import { KenneyTownAssets } from '../../src/remaster/assets/kenney-assets.js';
@@ -32,6 +34,31 @@ function testPreferencesDoNotMutateSaveSchema() {
         assert.deepEqual(legacySettings, { pause: false });
         assert.deepEqual(setRemasterEnabled(false), { version: 1, enabled: false, view: 'classic' });
         assert.deepEqual(setRemasterView('scene'), { version: 1, enabled: false, view: 'scene' });
+    }
+    finally {
+        if (typeof previousWindow === 'undefined') {
+            delete globalThis.window;
+        }
+        else {
+            globalThis.window = previousWindow;
+        }
+    }
+}
+
+function testViewPreferenceLeavesImportedStateIntact() {
+    const previousWindow = globalThis.window;
+    globalThis.window = { localStorage: createStorage() };
+    try {
+        const importedState = {
+            race: { species: 'human' },
+            settings: { showCity: true },
+            resource: { human: { amount: 2, max: 10 } },
+            city: { basic_housing: { count: 1 } }
+        };
+        const before = JSON.parse(JSON.stringify(importedState));
+        setRemasterEnabled(true);
+        setRemasterView('classic');
+        assert.deepEqual(importedState, before);
     }
     finally {
         if (typeof previousWindow === 'undefined') {
@@ -118,6 +145,40 @@ function testCuratedAssetsUseLocalBuildPaths() {
     assert.equal(Object.values(KenneyTownAssets).every((asset) => asset.startsWith('evolve/remaster-assets/kenney/')), true);
 }
 
+function testPhaseRouterUsesOnlyResolvedSignals() {
+    assert.equal(resolvePhaseRoute({ hasSpecies: true, protoplasm: true, sentienceReady: false }).kind, 'evolution');
+    assert.equal(resolvePhaseRoute({ hasSpecies: true, protoplasm: true, sentienceReady: true }).kind, 'sentience-transition');
+    assert.equal(resolvePhaseRoute({ hasSpecies: true, cityAvailable: true, hasBuiltStructure: false }).kind, 'early-settlement');
+    assert.equal(resolvePhaseRoute({ hasSpecies: true, cityAvailable: true, hasBuiltStructure: true }).kind, 'civilization');
+    assert.deepEqual(resolvePhaseRoute({ hasSpecies: true, creationActive: true }), { kind: 'unsupported', reason: 'creation-screen' });
+}
+
+function testPhaseSnapshotsAreFrozenAndDoNotRequireGlobal() {
+    const state = {
+        race: { species: 'octigoran', universe: 'standard' },
+        evolution: { membrane: { count: 2 } },
+        tech: { evo: 7, agriculture: 1 },
+        resource: { octigoran: { amount: 4, max: 10 } },
+        city: { biome: 'oceanic', ptrait: ['stormy'], calendar: { season: 1, weather: 2, temp: 1, wind: 0, day: 3 }, farm: { count: 1 } }
+    };
+    const town = Object.freeze({ contractVersion: 3, source: 'engine' });
+    const snapshot = createGamePhaseSnapshot(state, {
+        readPhase: () => ({ kind: 'civilization' }),
+        readEvolution: () => ({ sentienceReady: false }),
+        readRace: () => ({ label: 'Octigoran', type: 'aquatic' }),
+        readEnvironment: () => ({ biomeLabel: 'Oceanic' }),
+        readCivilization: () => town
+    });
+
+    assert.equal(snapshot.phase.kind, 'civilization');
+    assert.equal(snapshot.race.type, 'aquatic');
+    assert.deepEqual(snapshot.settlement.buildings, [{ id: 'farm', count: 1 }]);
+    assert.equal(snapshot.civilization.town, town);
+    assert.equal(Object.isFrozen(snapshot), true);
+    assert.equal(Object.isFrozen(snapshot.environment.calendar), true);
+    assert.equal(Object.isFrozen(snapshot.settlement.buildings), true);
+}
+
 function placeholders(value) {
     return [...String(value).matchAll(/%\d+(?!\d)/g)].map((match) => match[0]).sort();
 }
@@ -139,11 +200,14 @@ function testRemasterLocaleParity() {
 }
 
 testPreferencesDoNotMutateSaveSchema();
+testViewPreferenceLeavesImportedStateIntact();
 testActionBridgeOnlyDelegates();
 testParityReducers();
 testMockImportBuildGuard();
 testVisualProgressionUsesOnlySnapshotSignals();
 testVisualScenarioHelpers();
 testCuratedAssetsUseLocalBuildPaths();
+testPhaseRouterUsesOnlyResolvedSignals();
+testPhaseSnapshotsAreFrozenAndDoNotRequireGlobal();
 testRemasterLocaleParity();
 console.log('remaster integration contract tests passed');

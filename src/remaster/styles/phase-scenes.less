@@ -1,0 +1,103 @@
+// Escenas de fase iniciales: presentación original y sin controles de juego.
+// La vista clásica permanece debajo y se oculta sólo con el feature flag activo.
+
+#evolution.visual-remaster-scene {
+    > .action,
+    > .city {
+        display: none !important;
+    }
+}
+
+.visual-remaster-phase-root {
+    min-height: 0;
+
+    .visual-remaster__scene-host {
+        min-height: 0;
+    }
+}
+
+.remaster-phase-scene {
+    overflow: hidden;
+    border: 3px solid #b9854e;
+    border-radius: 1rem;
+    color: #f7f1d4;
+    background: linear-gradient(135deg, #3d302d, #1d3845);
+    box-shadow: inset 0 0 0 3px #1d2630, 0 .8rem 1.8rem rgba(5, 17, 27, .3);
+
+    &__art {
+        height: clamp(10rem, 26vw, 16rem);
+        border-bottom: 2px solid rgba(249, 209, 138, .36);
+        background: #1b4052;
+
+        svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    &__content {
+        padding: clamp(.9rem, 2.5vw, 1.5rem);
+        background:
+            repeating-linear-gradient(90deg, rgba(255, 235, 173, .04) 0 2px, transparent 2px 14px),
+            linear-gradient(135deg, #5e4232, #303a40);
+    }
+
+    &__eyebrow {
+        margin: 0 0 .2rem;
+        color: #f3c36a;
+        font-size: .7rem;
+        font-weight: 700;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+    }
+
+    h1 {
+        margin: 0;
+        color: #fff1bd;
+        font-size: clamp(1.25rem, 2.3vw, 2rem);
+        text-shadow: 0 2px #51362b;
+    }
+
+    &__subtitle {
+        max-width: 52rem;
+        margin: .35rem 0 0;
+        color: #d9ead9;
+        overflow-wrap: anywhere;
+    }
+
+    &__facts {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .55rem;
+        margin: 1rem 0 0;
+
+        > div {
+            min-width: 0;
+            border: 1px solid rgba(255, 229, 165, .28);
+            border-radius: .45rem;
+            padding: .45rem .6rem;
+            background: rgba(19, 39, 47, .48);
+        }
+
+        dt {
+            color: #f0c77b;
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+
+        dd {
+            margin: .14rem 0 0;
+            color: #f7f1d4;
+            overflow-wrap: anywhere;
+        }
+    }
+}
+
+@media (max-width: 560px) {
+    .remaster-phase-scene__facts {
+        grid-template-columns: 1fr;
+    }
+}

@@ -19,9 +19,11 @@ import { bioseed } from './resets.js';
 import { loadTab, tabLabel } from './index.js';
 import { createGameTownSnapshot } from './remaster/adapters/game-town-adapter.js';
 import { createGameActionBridge } from './remaster/adapters/game-action-bridge.js';
+import { createGamePhaseSnapshot } from './remaster/adapters/game-phase-adapter.js';
 import { getBuildingVisualDefinition } from './remaster/config/building-visual-registry.js';
+import { resolvePhaseRoute } from './remaster/config/phase-routing.js';
 import { getRemasterPreferences, setRemasterView } from './remaster/config/remaster-preferences.js';
-import { destroyTownScene, syncTownScene } from './remaster/scene/town-scene-manager.js';
+import { destroyRemasterPhaseScene, syncRemasterPhaseScene } from './remaster/scene/phase-scene-router.js';
 import { seasonDesc } from './seasons.js';
 
 export const actions = {
@@ -5374,9 +5376,11 @@ actions.evolution['bunker'] = {
 
 export function drawEvolution(){
     if (!global.settings.tabLoad && global.settings.civTabs !== 0){
+        destroyRemasterPhaseScene();
         return;
     }
     if (global.race.universe === 'bigbang' || (global.race.seeded && !global.race['chose'])){
+        syncRemasterPhaseForHost(document.getElementById('evolution'), () => drawEvolution());
         return;
     }
     if (global.tech['evo_challenge']){
@@ -5414,6 +5418,8 @@ export function drawEvolution(){
             setChallengeScreen();
         }
     }
+
+    syncRemasterPhaseForHost(document.getElementById('evolution'), () => drawEvolution());
 }
 
 function challengeEffect(c){
@@ -6321,13 +6327,78 @@ const cityVisualStateReader = Object.freeze({
     readContext: getTownContextState
 });
 
+/**
+ * Clasifica fases con señales y condiciones ya existentes. La condición de
+ * sentiencia se delega a la acción original, y el resto se limita a presencia
+ * de estructuras reales: no hay umbrales económicos, fórmulas ni progreso
+ * paralelo dentro del remaster.
+ */
+function getRemasterPhaseState(){
+    const sentience = actions.evolution.sentience;
+    const hasBuiltStructure = Object.keys(actions.city).some((id) => Number.isFinite(global.city[id]?.count) && global.city[id].count > 0);
+    return resolvePhaseRoute({
+        hasSpecies: typeof global.race?.species === 'string',
+        creationActive: Boolean(global.race.noexport),
+        bigBang: global.race.universe === 'bigbang',
+        seedSelection: global.race.seeded === true && !global.race.chose,
+        protoplasm: global.race.species === 'protoplasm',
+        sentienceReady: sentience?.condition?.() === true,
+        cityAvailable: global.settings.showCity === true,
+        hasBuiltStructure
+    });
+}
+
+function getRemasterEvolutionState(){
+    const sentience = actions.evolution.sentience;
+    return { sentienceReady: sentience?.condition?.() === true };
+}
+
+function getRemasterRaceState(id, raceState){
+    const species = races[id] || {};
+    return {
+        label: species.name || id,
+        type: raceState.maintype || species.type || null
+    };
+}
+
+function getRemasterEnvironmentState(){
+    const biomeId = global.city.biome;
+    return {
+        biomeLabel: biomeId && biomes[biomeId] ? biomes[biomeId].label : biomeId
+    };
+}
+
+const phaseVisualStateReader = Object.freeze({
+    readPhase: getRemasterPhaseState,
+    readEvolution: getRemasterEvolutionState,
+    readRace: getRemasterRaceState,
+    readEnvironment: getRemasterEnvironmentState,
+    readCivilization: () => createGameTownSnapshot(global, cityVisualStateReader)
+});
+
+/** Integra el router sin exponer `global` a ningún módulo bajo remaster/. */
+function syncRemasterPhaseForHost(host, redraw){
+    const remasterPreferences = getRemasterPreferences();
+    syncRemasterPhaseScene({
+        host,
+        enabled: remasterPreferences.enabled,
+        view: remasterPreferences.view,
+        readSnapshot: () => createGamePhaseSnapshot(global, phaseVisualStateReader),
+        commands: cityVisualCommands,
+        onViewChange(view){
+            setRemasterView(view);
+            redraw();
+        }
+    });
+}
+
 export function drawCity(){
     if (!global.settings.tabLoad && (global.settings.civTabs !== 1 || global.settings.spaceTabs !== 0)){
-        destroyTownScene();
+        destroyRemasterPhaseScene();
         return;
     }
     if (!global.settings.showCity){
-        destroyTownScene();
+        destroyRemasterPhaseScene();
         return;
     }
     let city_buildings = {};
@@ -6389,18 +6460,7 @@ export function drawCity(){
 
     cLabels = global.settings['cLabels'];
 
-    const remasterPreferences = getRemasterPreferences();
-    syncTownScene({
-        host: document.getElementById('city'),
-        enabled: remasterPreferences.enabled,
-        view: remasterPreferences.view,
-        readSnapshot: () => createGameTownSnapshot(global, cityVisualStateReader),
-        commands: cityVisualCommands,
-        onViewChange(view){
-            setRemasterView(view);
-            drawCity();
-        }
-    });
+    syncRemasterPhaseForHost(document.getElementById('city'), () => drawCity());
 }
 
 export function drawTech(){

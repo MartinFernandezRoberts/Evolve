@@ -103,6 +103,45 @@ resueltas en `visualBuildings`; el registro y los componentes de
 `src/remaster/` no importan el estado del motor. Véase
 [`BUILDING_VISUALS.md`](BUILDING_VISUALS.md).
 
+## Router de fases gráficas
+
+La integración ya no presupone que el único destino sea `#city`. El puente de
+`src/actions.js` conserva el acceso autorizado a `global`, `actions`, `races`
+y las condiciones originales, y entrega ese resultado a
+`createGamePhaseSnapshot(global, phaseVisualStateReader)`. Ningún módulo bajo
+`src/remaster/` importa `global`.
+
+```text
+actions.js (puente autorizado)
+  → createGamePhaseSnapshot(state, reader)
+  → snapshots inmutables de fase/raza/entorno/asentamiento/Civilización
+  → syncRemasterPhaseScene()
+  → escena compatible o fallback clásico
+```
+
+`drawEvolution()` y `drawCity()` siguen construyendo primero sus controles
+clásicos. Al final llaman al router con el host ya existente. El router sólo
+monta con el feature flag externo activo; con el flag apagado destruye cualquier
+raíz, listener e intervalo del remaster. No cambia `main.js`, el worker, los
+loops ni el esquema de `evolved`.
+
+La señal de transición utiliza directamente
+`actions.evolution.sentience.condition()`. La fase de asentamiento inicial se
+determina por la presencia de una estructura de `actions.city` ya construida;
+no contiene un umbral de población o una fórmula duplicada. Las pantallas de
+creación de raza/planeta, selección semillada, Big Bang y fases no cubiertas
+devuelven `UnsupportedPhaseScene`, que no monta UI y deja el clásico operativo.
+
+`CivilizationTownScene` es un adaptador del `TownSceneManager` existente, por
+lo que conserva el `TownSnapshot` v3, el muestreo limitado, la limpieza y el
+`GameActionBridge`. Evolution, transición y asentamiento son sólo lectura en
+esta entrega; cualquier acción futura deberá añadir un método delegado al
+puente, no mutar `global` desde una escena.
+
+El contrato completo y la tabla de rutas están en
+[`PHASE_ARCHITECTURE.md`](PHASE_ARCHITECTURE.md); la cobertura entre el motor y
+la wiki fuente está en [`WIKI_COVERAGE.md`](WIKI_COVERAGE.md).
+
 ## Compatibilidad
 
 - El game loop, balance, recursos, costes, tecnologías y resets no cambian.
