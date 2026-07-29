@@ -31,6 +31,10 @@
         margin: 0 auto 1rem;
         max-width: 1660px;
 
+        > div {
+            min-width: 0;
+        }
+
         h1,
         p {
             margin: 0;
@@ -46,6 +50,7 @@
         p {
             margin-top: .35rem;
             color: #b9dfd1;
+            overflow-wrap: anywhere;
         }
 
         a {
@@ -110,6 +115,7 @@
     .town-scene__panel h2,
     .town-scene__subtitle {
         margin: 0;
+        overflow-wrap: anywhere;
     }
 
     .town-scene__header h1 {
@@ -126,13 +132,16 @@
     }
 
     .town-scene__resources {
-        display: grid;
-        grid-template-columns: repeat(5, minmax(4.2rem, 1fr));
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
         gap: .4rem;
     }
 
     .town-scene__resource {
+        position: relative;
         min-width: 4.3rem;
+        max-width: 9rem;
         border: 1px solid rgba(255, 229, 165, .32);
         border-radius: .5rem;
         padding: .35rem .5rem;
@@ -140,23 +149,65 @@
         box-shadow: inset 0 1px rgba(255, 255, 255, .08);
 
         strong,
-        span {
+        > span:not(.town-scene__resource-icon) {
             display: block;
         }
 
         strong {
-            color: var(--resource-accent);
+            color: #ffe39a;
             font-size: 1rem;
             line-height: 1.1;
         }
 
-        span {
+        > span:not(.town-scene__resource-icon) {
             overflow: hidden;
             color: #d5e6d5;
             font-size: .68rem;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+
+        &:focus-visible {
+            outline: 2px solid #ffe391;
+            outline-offset: 2px;
+        }
+
+        &.is-trending-down strong,
+        &.is-depleted strong {
+            color: #ff9d8a;
+        }
+
+        &.is-trending-up strong {
+            color: #aee68a;
+        }
+
+        &.is-full {
+            border-color: #ffe391;
+        }
+
+        &.is-required {
+            box-shadow: inset 0 0 0 1px rgba(255, 227, 144, .55), 0 0 .5rem rgba(255, 208, 110, .18);
+        }
+
+        &.is-missing {
+            border-color: #ff9988;
+            box-shadow: inset 0 0 0 1px rgba(255, 136, 119, .45), 0 0 .55rem rgba(233, 102, 88, .22);
+        }
+    }
+
+    .town-scene__resource-icon {
+        float: left;
+        min-width: 1.55rem;
+        height: 1.55rem;
+        margin: .05rem .35rem .1rem 0;
+        border: 1px solid rgba(255, 236, 173, .55);
+        border-radius: 50%;
+        color: #25434a;
+        background: #e6c66e;
+        font-size: .75rem;
+        font-weight: 800;
+        line-height: 1.45rem;
+        text-align: center;
     }
 
     .town-scene__layout {
@@ -1438,6 +1489,15 @@
         .remaster-demo__intro {
             align-items: start;
             flex-direction: column;
+
+            h1 {
+                font-size: 1.55rem;
+                line-height: 1.12;
+            }
+
+            p {
+                max-width: 100%;
+            }
         }
 
         .town-scene {
@@ -1449,7 +1509,7 @@
         }
 
         .town-scene__resources {
-            grid-template-columns: repeat(3, 1fr);
+            justify-content: flex-start;
         }
 
         .town-scene__resource {

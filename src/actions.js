@@ -1,6 +1,6 @@
 import { global, save, seededRandom, webWorker, keyMultiplier, keyMap, srSpeak, sizeApproximation, p_on, support_on, int_on, gal_on, spire_on, tmp_vars, setupStats, callback_queue } from './vars.js';
 import { loc } from './locale.js';
-import { timeCheck, timeFormat, vBind, popover, clearPopper, flib, tagEvent, clearElement, costMultiplier, darkEffect, genCivName, powerModifier, powerCostMod, calcPrestige, adjustCosts, modRes, messageQueue, buildQueue, format_emblem, shrineBonusActive, calc_mastery, calcPillar, calcGenomeScore, getShrineBonus, eventActive, easterEgg, getHalloween, trickOrTreat, deepClone, hoovedRename, get_qlevel } from './functions.js';
+import { timeCheck, timeFormat, vBind, popover, clearPopper, flib, tagEvent, clearElement, costMultiplier, darkEffect, genCivName, powerModifier, powerCostMod, calcPrestige, adjustCosts, modRes, messageQueue, buildQueue, format_emblem, shrineBonusActive, calc_mastery, calcPillar, calcGenomeScore, getShrineBonus, eventActive, easterEgg, getHalloween, trickOrTreat, deepClone, hoovedRename, get_qlevel, getCityEnergyStatus } from './functions.js';
 import { unlockAchieve, challengeIcon, alevel, universeAffix, checkAdept } from './achieve.js';
 import { races, traits, genus_def, neg_roll_traits, randomMinorTrait, cleanAddTrait, combineTraits, biomes, planetTraits, setJType, altRace, setTraitRank, setImitation, shapeShift, basicRace, fathomCheck, traitCostMod, renderSupernatural, blubberFill, traitRank } from './races.js';
 import { defineResources, unlockCrates, unlockContainers, crateValue, containerValue, galacticTrade, spatialReasoning, resource_values, initResourceTabs, marketItem, containerItem, tradeSummery, faithBonus, templePlasmidBonus, faithTempleCount } from './resources.js';
@@ -16,10 +16,13 @@ import { production, highPopAdjust } from './prod.js';
 import { techList, techPath } from './tech.js';
 import { defineGovernor, govActive, removeTask, gov_tasks } from './governor.js';
 import { bioseed } from './resets.js';
-import { loadTab } from './index.js';
+import { loadTab, tabLabel } from './index.js';
 import { createGameTownSnapshot } from './remaster/adapters/game-town-adapter.js';
+import { createGameActionBridge } from './remaster/adapters/game-action-bridge.js';
 import { getBuildingVisualDefinition } from './remaster/config/building-visual-registry.js';
+import { getRemasterPreferences, setRemasterView } from './remaster/config/remaster-preferences.js';
 import { destroyTownScene, syncTownScene } from './remaster/scene/town-scene-manager.js';
+import { seasonDesc } from './seasons.js';
 
 export const actions = {
     evolution: {
@@ -6033,10 +6036,20 @@ function getActionText(c_action, field){
 function getCityActionCostRows(c_action, id){
     const preview = $('<div></div>');
     actionDesc(preview,c_action,global.city[id],false,'city',id);
-    return preview.find('.costList > div').toArray().map((element) => ({
-        text: $(element).text().trim(),
-        status: $(element).hasClass('has-text-danger') ? 'insufficient' : ($(element).hasClass('has-text-alert') ? 'warning' : 'sufficient')
-    }));
+    const rows = preview.find('.costList > div').toArray().map((element) => {
+        const row = $(element);
+        const resourceClass = Array.from(element.classList).find((className) => className.startsWith('res-'));
+        const dataAttribute = element.getAttributeNames().find((name) => name.startsWith('data-'));
+        const rawAmount = dataAttribute ? Number(element.getAttribute(dataAttribute)) : null;
+        return {
+            id: resourceClass ? resourceClass.slice(4) : (dataAttribute ? dataAttribute.slice(5) : null),
+            text: row.text().trim(),
+            status: row.hasClass('has-text-danger') ? 'insufficient' : (row.hasClass('has-text-alert') ? 'warning' : 'sufficient'),
+            amount: Number.isFinite(rawAmount) ? rawAmount : null
+        };
+    });
+    preview.remove();
+    return rows;
 }
 
 function getCityVisualWorkers(id){
@@ -6054,7 +6067,9 @@ function getCityVisualWorkers(id){
         return {
             id: job,
             label: worker.name || loc(`job_${job}`),
+            description: typeof job_desc[job] === 'function' ? htmlToText(job_desc[job](false)) : '',
             workers: Number(worker.workers || 0),
+            assigned: Number(worker.assigned ?? worker.workers ?? 0),
             max: typeof worker.max === 'number' ? worker.max : null,
             canAssign: Boolean(adjustable && defaultWorker && defaultWorker.workers > 0 && (worker.max === -1 || worker.workers < worker.max)),
             canRemove: Boolean(adjustable && worker.workers > 0)
@@ -6073,14 +6088,18 @@ function getCityVisualBuildingDetail(id, c_action){
     const queue = (global.queue?.queue || []).filter((entry) => entry.id === c_action.id);
     const queuedAmount = queue.reduce((total, entry) => total + Number(entry.q || 0), 0);
     const supportsPower = Boolean(getBuildingVisualDefinition(id)?.states.supportsPower && typeof cityState.on === 'number');
+    const costs = getCityActionCostRows(c_action,id);
+    const maximum = typeof c_action.queue_complete === 'function' ? c_action.queue_complete() : null;
 
     return {
         description: getActionText(c_action,'desc'),
         effect: getActionText(c_action,'effect'),
-        costs: getCityActionCostRows(c_action,id),
+        costs,
+        missingCosts: costs.filter((cost) => cost.status === 'insufficient').map((cost) => cost.id).filter(Boolean),
         affordable: checkAffordable(c_action,false,false),
         buildAmounts: c_action['no_multi'] ? [1] : [1,5,10],
         maxBuild: false,
+        maximum: typeof maximum === 'number' && Number.isFinite(maximum) ? maximum : null,
         energy: typeof power === 'number' ? { value: Math.abs(power), direction: power < 0 ? 'produced' : 'used' } : null,
         enabled: supportsPower ? { on: cityState.on, off: Math.max(0, cityState.count - cityState.on) } : null,
         workers: getCityVisualWorkers(id),
@@ -6105,7 +6124,7 @@ export function runVisualCityBuild(id, quantity){
     }
     const beforeCount = cityState.count;
     const beforeQueue = (global.queue?.queue || []).filter((entry) => entry.id === c_action.id).reduce((total, entry) => total + Number(entry.q || 0), 0);
-    runAction(c_action,'city',id,{ quantity, queue: false });
+    runAction(c_action,'city',id,{ quantity });
     const built = Math.max(0, cityState.count - beforeCount);
     const queued = Math.max(0, (global.queue?.queue || []).filter((entry) => entry.id === c_action.id).reduce((total, entry) => total + Number(entry.q || 0), 0) - beforeQueue);
     const success = built > 0 || queued > 0;
@@ -6126,17 +6145,25 @@ export function setVisualCityPower(id, enabled){
 /** Asigna o retira un trabajador mediante el control original de Civismo. */
 export function setVisualCityWorkers(id, job, amount){
     const definition = getBuildingVisualDefinition(id);
-    if (!definition?.workerJobs.includes(job) || job === 'garrison'){
+    if (!definition?.workerJobs.includes(job) || job === 'garrison' || !Number.isInteger(amount) || amount === 0){
         return { success: false, changed: 0 };
     }
     const changed = changeJobWorkers(job, amount);
     return { success: changed !== 0, changed: Math.abs(changed) };
 }
 
-const cityVisualCommands = Object.freeze({
+/** Devuelve el control a las pestañas clásicas sin mutar datos de partida. */
+export function openVisualClassicPanel(){
+    setRemasterView('classic');
+    drawCity();
+    return { success: true };
+}
+
+const cityVisualCommands = createGameActionBridge({
     build: runVisualCityBuild,
     setPower: setVisualCityPower,
-    setWorkers: setVisualCityWorkers
+    setWorkers: setVisualCityWorkers,
+    openClassicPanel: openVisualClassicPanel
 });
 
 /**
@@ -6155,13 +6182,158 @@ function getCityVisualBuildingState(id){
     }
     const unlocked = checkCityRequirements(id) && checkTechQualifications(action,id);
     const label = typeof action.title === 'function' ? action.title() : action.title;
+    const detail = unlocked || global.city[id]?.count > 0 ? getCityVisualBuildingDetail(id,action) : null;
     return {
         label: typeof label === 'string' ? label : id,
         unlocked,
         affordable: unlocked ? checkAffordable(action,false,false) : null,
-        detail: unlocked || global.city[id]?.count > 0 ? getCityVisualBuildingDetail(id,action) : null
+        status: !unlocked ? 'locked' : (global.city[id]?.count > 0 ? 'built' : 'available'),
+        maximum: detail?.maximum ?? null,
+        detail
     };
 }
+
+/** Etiqueta de una estructura construida que no necesariamente tiene arte propio. */
+function getTownBuiltBuildingState(id){
+    const action = actions.city[id];
+    const label = action ? (typeof action.title === 'function' ? action.title() : action.title) : id;
+    return {
+        label: typeof label === 'string' ? label : id,
+        state: global.city[id]?.count > 0 ? 'built' : 'available'
+    };
+}
+
+/** Presentación de un recurso usando el mismo formato y orden de la UI base. */
+function getTownResourceState(id, resource, order){
+    const amount = sizeApproximation(resource.amount,0);
+    const hasCapacity = resource.max >= 0;
+    const maximum = hasCapacity ? sizeApproximation(resource.max,0) : '';
+    const diff = sizeApproximation(resource.diff,2);
+    const label = resource.name || id;
+    const warning = hasCapacity && resource.amount >= resource.max
+        ? 'full'
+        : (resource.amount <= 0 && resource.diff < 0 ? 'depleted' : (resource.diff < 0 ? 'negative' : 'none'));
+
+    return {
+        order,
+        label,
+        iconText: label.trim().slice(0,1).toUpperCase(),
+        value: hasCapacity ? `${amount} / ${maximum}` : String(amount),
+        tooltip: `${label}: ${hasCapacity ? `${amount} / ${maximum}` : amount} (${diff} /s)`,
+        precision: 2,
+        trend: resource.diff > 0 ? 'positive' : (resource.diff < 0 ? 'negative' : 'stable'),
+        warning,
+        trade: {
+            enabled: typeof resource.trade === 'number',
+            amount: typeof resource.trade === 'number' ? resource.trade : 0,
+            tradable: tmp_vars.resource?.[id]?.tradable === true
+        }
+    };
+}
+
+/** Expone nombres y descripciones que ya calcula el módulo original de empleos. */
+function getTownWorkerState(id, worker){
+    const defaultWorker = global.civic[global.civic.d_job];
+    const adjustable = id !== 'garrison' && worker.display && !(global.race['warlord'] && id === 'miner');
+    return {
+        label: worker.name || loc(`job_${id}`),
+        description: typeof job_desc[id] === 'function' ? htmlToText(job_desc[id](false)) : '',
+        canAssign: Boolean(adjustable && defaultWorker && defaultWorker.workers > 0 && (worker.max === -1 || worker.workers < worker.max)),
+        canRemove: Boolean(adjustable && worker.workers > 0)
+    };
+}
+
+function getTownTechnologyState(id){
+    const action = actions.tech[id];
+    const label = action ? (typeof action.title === 'function' ? action.title() : action.title) : id;
+    return {
+        label: typeof label === 'string' ? label : id,
+        era: typeof action?.era === 'string' ? action.era : null
+    };
+}
+
+function getTownDistrictState(id, count){
+    return {
+        label: loc(`remaster_district_${id}`),
+        summary: count > 0 ? loc('remaster_district_count',[count]) : loc('remaster_district_empty'),
+        detail: '',
+        status: count > 0 ? loc('remaster_built_count',[count]) : loc('remaster_empty')
+    };
+}
+
+function getTownEnvironmentState(){
+    return {
+        seasonLabel: seasonDesc('season'),
+        weatherLabel: seasonDesc('weather'),
+        temperatureLabel: seasonDesc('temp')
+    };
+}
+
+function getTownSceneTexts(){
+    return {
+        visualTitle: loc('remaster_visual_title'),
+        graphicalView: loc('remaster_graphical_view'),
+        classicView: loc('remaster_classic_view'),
+        mapControls: loc('remaster_map_controls'),
+        zoomOut: loc('remaster_zoom_out'),
+        zoomIn: loc('remaster_zoom_in'),
+        resetView: loc('remaster_reset_view'),
+        panHint: loc('remaster_pan_hint'),
+        mapLabel: loc('remaster_map_label'),
+        visibleResources: loc('tab_resources'),
+        civilizationView: loc('remaster_civilization_view'),
+        districtBuildings: loc('remaster_district_buildings'),
+        noBuildings: loc('remaster_no_buildings'),
+        available: loc('remaster_available'),
+        noResources: loc('remaster_no_resources'),
+        backToDistrict: loc('remaster_back_to_district'),
+        quantity: loc('remaster_quantity'),
+        currentCost: loc('remaster_current_cost'),
+        sufficientResources: loc('remaster_sufficient_resources'),
+        insufficientResources: loc('remaster_insufficient_resources'),
+        buildMaximum: loc('remaster_build_maximum'),
+        energyGenerated: loc('remaster_energy_generated'),
+        energyUsed: loc('remaster_energy_used'),
+        associatedWorkers: loc('remaster_associated_workers'),
+        enabled: loc('remaster_enabled'),
+        disabled: loc('remaster_disabled'),
+        noQueue: loc('remaster_no_queue'),
+        construct: loc('construct'),
+        activate: loc('active'),
+        deactivate: loc('not_active'),
+        queue: loc('queue')
+    };
+}
+
+function getTownContextState(){
+    const species = races[global.race.species] || {};
+    const biomeId = global.city.biome;
+    const government = global.civic.govern?.type;
+    const stage = tabLabel('city');
+    return {
+        title: loc('remaster_visual_title'),
+        subtitle: loc('remaster_scene_subtitle',[stage]),
+        texts: getTownSceneTexts(),
+        speciesLabel: species.name || global.race.species,
+        biomeLabel: biomeId ? loc(`biome_${biomeId}_name`) : null,
+        planet: species.home || null,
+        stage,
+        populationLabel: global.resource[global.race.species]?.name || global.race.species,
+        governmentLabel: government ? loc(`govern_${government}`) : null,
+        energy: getCityEnergyStatus() || { available: null, generated: null, consumed: null, powered: null }
+    };
+}
+
+const cityVisualStateReader = Object.freeze({
+    readResource: getTownResourceState,
+    readBuiltBuilding: getTownBuiltBuildingState,
+    readBuilding: getCityVisualBuildingState,
+    readWorker: getTownWorkerState,
+    readTechnology: getTownTechnologyState,
+    readDistrict: getTownDistrictState,
+    readEnvironment: getTownEnvironmentState,
+    readContext: getTownContextState
+});
 
 export function drawCity(){
     if (!global.settings.tabLoad && (global.settings.civTabs !== 1 || global.settings.spaceTabs !== 0)){
@@ -6231,14 +6403,15 @@ export function drawCity(){
 
     cLabels = global.settings['cLabels'];
 
+    const remasterPreferences = getRemasterPreferences();
     syncTownScene({
         host: document.getElementById('city'),
-        enabled: global.settings.visualRemaster,
-        view: global.settings.visualRemasterView,
-        readSnapshot: () => createGameTownSnapshot(global, getCityVisualBuildingState),
+        enabled: remasterPreferences.enabled,
+        view: remasterPreferences.view,
+        readSnapshot: () => createGameTownSnapshot(global, cityVisualStateReader),
         commands: cityVisualCommands,
         onViewChange(view){
-            global.settings.visualRemasterView = view;
+            setRemasterView(view);
             drawCity();
         }
     });

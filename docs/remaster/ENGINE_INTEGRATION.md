@@ -17,30 +17,34 @@ serialización siguen siendo la única autoridad de juego. Ningún módulo de
 
 ## Feature flag y persistencia
 
-`src/vars.js` inicializa dos claves aditivas dentro del sistema de ajustes
-original:
+El switch sigue apareciendo en Settings y usa su ciclo Vue original, pero su
+preferencia de presentación se guarda fuera de la partida:
 
 ```js
-global.settings.visualRemaster = false;
-global.settings.visualRemasterView = 'scene'; // 'scene' | 'classic'
+localStorage['evolve.visual-remaster.preferences.v1'] = {
+  version: 1,
+  enabled: false,
+  view: 'scene' // 'scene' | 'classic'
+};
 ```
 
 La opción **Visual Remaster** está apagada por defecto y se enlaza con el Vue
-existente de Settings en `src/index.js`. Al formar parte de `global.settings`,
-se persiste mediante el mismo ciclo de guardado que el juego. No se añade un
-formato de guardado alternativo, no se modifica la codificación UTF-16/Base64 y
-las partidas antiguas que no contienen estas claves reciben los valores por
-defecto al cargarse.
+existente de Settings en `src/index.js`. No forma parte de `global.settings`:
+por tanto no cambia el JSON, UTF-16/Base64, importación ni exportación de una
+partida. Al arrancar, `migrateLegacyRemasterPreferences()` conserva una elección
+de versiones previas y elimina esas dos claves aditivas antes del primer save o
+export.
 
-Esto es una extensión retrocompatible del objeto de settings, no una nueva
-fuente de verdad del remaster. Con el flag apagado, `syncTownScene()` no crea
-raíz DOM, listeners ni temporizadores.
+Es una preferencia de interfaz retrocompatible, no una fuente de verdad de
+reglas. Con el flag apagado, `syncTownScene()` no crea raíz DOM, listeners ni
+temporizadores.
 
 ## Punto de montaje y ciclo de vida
 
 1. El juego llama a `drawCity()` desde su flujo habitual de Civilización.
 2. La función termina de construir las tarjetas clásicas sin cambios.
-3. Sólo entonces pasa `global` al adaptador `createGameTownSnapshot(global)`.
+3. Sólo entonces el puente de `actions.js` pasa el estado y lectores de
+   presentación ya resueltos a `createGameTownSnapshot(global, reader)`.
 4. `syncTownScene()` monta una raíz hija de `#city` cuando el flag está activo.
 5. La vista gráfica añade `visual-remaster-scene` a `#city` y oculta sólo sus
    tarjetas de ciudad; la vista clásica las vuelve a mostrar de inmediato.
@@ -55,17 +59,19 @@ diferencial; no reconstruye el mapa salvo que cambie su estructura visual.
 
 ## Acciones delegadas
 
-Los controles visuales usan wrappers mínimos de `src/actions.js` que delegan la
-intención hacia la ruta original:
+Los controles visuales reciben un `GameActionBridge` inmutable. Sus wrappers
+mínimos de `src/actions.js` delegan la intención hacia la ruta original:
 
 ```text
 nodo visual -> wrapper de actions.js -> runAction(...) -> motor existente
 ```
 
 También se reutilizan `setActionPower()` y `changeJobWorkers()` para energía y
-trabajadores. No se invoca `actions.city[id].action()` directamente desde la
-escena ni se muta la partida desde el adaptador o los componentes. El detalle y
-la lista de costes se preparan con los renderizadores y comprobaciones del motor
+trabajadores. Las cantidades visuales respetan la tecla de cola activa de
+`runAction()`; no se fuerza una semántica paralela. No se invoca
+`actions.city[id].action()` directamente desde la escena ni se muta la partida
+desde el adaptador o los componentes. El detalle, los recursos faltantes y la
+lista de costes se preparan con los renderizadores y comprobaciones del motor
 antes de cruzar la frontera `TownSnapshot`.
 
 ## Contrato de estado

@@ -17,9 +17,9 @@ en `config/town-map.js` y no se cargan durante una partida.
 | Área | Procedimiento | Resultado |
 | --- | --- | --- |
 | Build Windows | `npm.cmd run build-win` | Correcto. |
-| Partida nueva | Perfil de navegador limpio; se exportó la partida creada. | `visualRemaster: false` y `visualRemasterView: 'scene'` por defecto. |
-| Importación antigua | Se exportó la partida nueva, se retiraron ambas claves del remaster y se importó mediante `window.importGame()`. | Recarga correcta; especie, días y semilla preservados; claves restauradas con valores retrocompatibles. |
-| Exportación | Se inspeccionó el Base64 generado por `window.exportGame()`. | No cambia la codificación; sólo aparecen las dos preferencias aditivas. |
+| Partida nueva | Perfil de navegador limpio; se exportó la partida creada. | El remaster está apagado por defecto en `evolve.visual-remaster.preferences.v1`; no se añade ninguna clave a la partida. |
+| Importación antigua | Se exporta una partida con las claves históricas y se importa mediante `window.importGame()`. | La migración conserva la preferencia fuera de `evolved` y elimina ambas claves antes de exportar/autoguardar. |
+| Exportación | Se inspecciona el Base64 generado por `window.exportGame()`. | No cambia la codificación ni contiene preferencias del remaster. |
 | Flag y vista | Se activó y desactivó el switch de Settings; se montó el gestor aislado con snapshot mock. | El flag persiste; escena, vista clásica y desmontaje devuelven el DOM/timer a cero. |
 | Pausa | Se pulsó `#pausegame` y se reanudó. | `settings.pause` cambió `false → true → false`. |
 | Ciclo de vida | Harness de navegador con contador de `setInterval`/`clearInterval`. | Un timer en escena; cero al pasar a clásica o desactivar; listeners explícitos se eliminan al destruir. |

@@ -73,7 +73,7 @@ La interacción debe mantener equivalencia funcional con la tarjeta clásica: un
 
 ### Assets y configuración
 
-Los assets están bajo `src/remaster/assets/`, con SVG/CSS temporales propios. Sólo se aceptan SVG/CSS/placeholders propios o imágenes generadas para este fork. Durante esta fase, `global.settings.visualRemaster` y `global.settings.visualRemasterView` usan la persistencia original de Settings con valores por defecto retrocompatibles; no se crea un formato de save independiente ni se modifica la codificación de importación/exportación.
+Los assets están bajo `src/remaster/assets/`, con SVG/CSS temporales propios. Sólo se aceptan SVG/CSS/placeholders propios o imágenes generadas para este fork. La preferencia versionada `evolve.visual-remaster.preferences.v1` se guarda en `localStorage` fuera de `evolved`; el switch permanece en Settings, pero no se modifica la codificación ni el contenido de importación/exportación.
 
 ### Pruebas
 
@@ -97,7 +97,7 @@ Para las acciones interactivas hace falta un cambio mínimo adicional y explíci
 
 ## Compatibilidad
 
-- No se modifica el formato Base64/UTF-16 de importación/exportación. Se añaden dos preferencias retrocompatibles al objeto de Settings original, con default apagado para saves anteriores.
+- No se modifica el formato Base64/UTF-16 de importación/exportación. Las preferencias del remaster viven fuera de la partida, con default apagado para instalaciones nuevas y migración de las claves históricas.
 - La interfaz clásica sigue siendo fuente de verdad y fallback funcional.
 - Cambios de idioma, raza, planeta, tecnología, reset, partida importada o cambios de pestaña desmontan/reconstruyen sólo la capa visual; no recalculan el juego.
 - El bundle sigue construido por esbuild y los estilos por LESS, compatible con los comandos Windows existentes.

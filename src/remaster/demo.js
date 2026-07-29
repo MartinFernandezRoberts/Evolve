@@ -12,5 +12,9 @@ if (root) {
     });
 
     scene.mount();
-    window.addEventListener('pagehide', () => scene.destroy(), { once: true });
+    const destroyDemoScene = () => {
+        window.removeEventListener('pagehide', destroyDemoScene);
+        scene.destroy();
+    };
+    window.addEventListener('pagehide', destroyDemoScene);
 }

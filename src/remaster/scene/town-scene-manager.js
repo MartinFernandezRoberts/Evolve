@@ -35,13 +35,16 @@ class TownSceneManager {
     }
 
     mount(view) {
+        this.initialSnapshot = this.readSnapshot();
+        const texts = this.initialSnapshot.texts || {};
+        const text = (key, fallback) => typeof texts[key] === 'string' ? texts[key] : fallback;
         this.root = document.createElement('section');
         this.root.className = 'visual-remaster-root';
         this.root.innerHTML = `
-            <div class="visual-remaster__switcher" role="group" aria-label="Vista de Civilización">
-                <span class="visual-remaster__title">Visual Remaster</span>
-                <button type="button" data-remaster-view="scene">Vista gráfica</button>
-                <button type="button" data-remaster-view="classic">Vista clásica</button>
+            <div class="visual-remaster__switcher" role="group" aria-label="${text('civilizationView', 'Civilization View')}">
+                <span class="visual-remaster__title">${text('visualTitle', 'Visual Remaster')}</span>
+                <button type="button" data-remaster-view="scene">${text('graphicalView', 'Graphical View')}</button>
+                <button type="button" data-remaster-view="classic">${text('classicView', 'Classic View')}</button>
             </div>
             <div class="visual-remaster__scene-host"></div>
         `;
@@ -70,11 +73,12 @@ class TownSceneManager {
             this.sceneHost.hidden = false;
             if (!this.scene) {
                 this.scene = new TownScene(this.sceneHost, {
-                    snapshot: this.readSnapshot(),
+                    snapshot: this.initialSnapshot || this.readSnapshot(),
                     commands: this.commands,
                     onAction: (event) => this.handleSceneAction(event)
                 });
                 this.scene.mount();
+                this.initialSnapshot = null;
             }
             else {
                 this.scene.setCommands(this.commands, (event) => this.handleSceneAction(event));
@@ -177,6 +181,7 @@ class TownSceneManager {
         this.root?.remove();
         this.root = null;
         this.sceneHost = null;
+        this.initialSnapshot = null;
     }
 }
 

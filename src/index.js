@@ -14,12 +14,14 @@ import { renderFortress, buildFortress, drawMechLab, clearMechDrag, drawHellObse
 import { renderEdenic } from './edenic.js';
 import { drawShipYard, clearShipDrag, renderTauCeti } from './truepath.js';
 import { arpa, clearGeneticsDrag } from './arpa.js';
+import { getRemasterPreferences, setRemasterEnabled } from './remaster/config/remaster-preferences.js';
 
 export function mainVue(){
     vBind({
         el: '#mainColumn div:first-child',
         data: {
-            s: global.settings
+            s: global.settings,
+            remaster: getRemasterPreferences()
         },
         methods: {
             swapTab(tab){
@@ -176,10 +178,7 @@ export function mainVue(){
                 initTabs();
             },
             toggleVisualRemaster(enabled){
-                global.settings.visualRemaster = enabled;
-                if (!['scene','classic'].includes(global.settings.visualRemasterView)){
-                    global.settings.visualRemasterView = 'scene';
-                }
+                this.remaster = setRemasterEnabled(enabled);
                 drawCity();
             },
             unpause(){
@@ -244,7 +243,7 @@ export function mainVue(){
     );
 }
 
-function tabLabel(lbl){
+export function tabLabel(lbl){
     switch (lbl){
         case 'city':
             if (global.resource[global.race.species]){
@@ -1412,7 +1411,7 @@ export function index(){
         <b-switch class="setting" v-model="s.pause" @input="unpause"><span class="settings12" aria-label="${loc('settings12')}">{{ 'pause' | label }}</span></b-switch>
         <b-switch class="setting" v-model="s.mKeys"><span class="settings1" aria-label="${loc('settings1')}">{{ 'm_keys' | label }}</span></b-switch>
         <b-switch class="setting" v-model="s.cLabels"><span class="settings5" aria-label="${loc('settings5')}">{{ 'c_cat' | label }}</span></b-switch>
-        <b-switch class="setting" v-model="s.visualRemaster" @input="toggleVisualRemaster"><span>Visual Remaster</span></b-switch>
+        <b-switch class="setting" v-model="remaster.enabled" @input="toggleVisualRemaster"><span>${loc('remaster_visual_title')}</span></b-switch>
         <b-switch class="setting" v-model="s.alwaysPower"><span class="settings17" aria-label="${loc('settings17')}">{{ 'always_power' | label }}</span></b-switch>
         <b-switch class="setting" v-model="s.qKey"><span class="settings6" aria-label="${loc('settings6')}">{{ 'q_key' | label }}</span></b-switch>
         <b-switch class="setting" v-model="s.qAny"><span class="settings7" aria-label="${loc('settings7')}">{{ 'q_any' | label }}</span></b-switch>

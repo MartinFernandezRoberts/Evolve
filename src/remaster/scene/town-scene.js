@@ -76,6 +76,8 @@ export class TownScene {
     }
 
     mount() {
+        const texts = this.snapshot.texts || {};
+        const text = (key, fallback) => typeof texts[key] === 'string' ? texts[key] : fallback;
         this.root.innerHTML = `
             <section class="town-scene" aria-labelledby="town-scene-title">
                 <header class="town-scene__header">
@@ -84,18 +86,18 @@ export class TownScene {
                         <h1 id="town-scene-title"></h1>
                         <p class="town-scene__subtitle"></p>
                     </div>
-                    <div class="town-scene__resources" aria-label="Recursos visibles"></div>
+                    <div class="town-scene__resources" aria-label="${text('visibleResources', 'Resources')}"></div>
                 </header>
                 <div class="town-scene__layout">
                     <div class="town-scene__map-frame">
-                        <div class="town-scene__toolbar" role="group" aria-label="Controles del mapa">
-                            <button type="button" data-town-control="zoom-out" aria-label="Alejar mapa">−</button>
-                            <button type="button" data-town-control="reset" aria-label="Restablecer vista">Vista</button>
-                            <button type="button" data-town-control="zoom-in" aria-label="Acercar mapa">+</button>
+                        <div class="town-scene__toolbar" role="group" aria-label="${text('mapControls', 'Town map controls')}">
+                            <button type="button" data-town-control="zoom-out" aria-label="${text('zoomOut', 'Zoom out')}">−</button>
+                            <button type="button" data-town-control="reset" aria-label="${text('resetView', 'Reset view')}">${text('resetView', 'View')}</button>
+                            <button type="button" data-town-control="zoom-in" aria-label="${text('zoomIn', 'Zoom in')}">+</button>
                             <span class="town-scene__zoom-label" aria-live="polite"></span>
                         </div>
-                        <p class="town-scene__map-hint">Arrastra el terreno para desplazarte. Rueda o botones para zoom.</p>
-                        <svg class="town-scene__map" viewBox="0 0 1600 900" role="group" aria-label="Mapa interactivo del pueblo" tabindex="0">
+                        <p class="town-scene__map-hint">${text('panHint', 'Drag the terrain to pan. Use the wheel or buttons to zoom.')}</p>
+                        <svg class="town-scene__map" viewBox="0 0 1600 900" role="group" aria-label="${text('mapLabel', 'Interactive town map')}" tabindex="0">
                             <g class="town-scene__world"></g>
                         </svg>
                         <div id="town-scene-tooltip" class="town-scene__tooltip" role="tooltip" hidden></div>
@@ -192,7 +194,8 @@ export class TownScene {
     }
 
     updateSnapshotData(forcePanel) {
-        this.eyebrow.textContent = this.snapshot.source === 'engine' ? 'Visual Remaster' : 'Prototipo visual aislado';
+        const texts = this.snapshot.texts || {};
+        this.eyebrow.textContent = this.snapshot.source === 'engine' ? (texts.visualTitle || 'Visual Remaster') : 'Mock prototype';
         this.title.textContent = this.snapshot.title;
         this.subtitle.textContent = this.snapshot.subtitle;
         this.syncResourceDisplay();
@@ -241,8 +244,11 @@ export class TownScene {
     }
 
     syncResourceDisplay() {
-        const visibleResources = this.snapshot.resources.slice(0, 6);
+        const visibleResources = this.snapshot.resources;
         const ids = new Set(visibleResources.map((resource) => resource.id));
+        const selectedBuilding = this.snapshot.visualBuildings.find((building) => building.id === this.selectedBuildingId);
+        const requiredCosts = new Set((selectedBuilding?.detail?.costs || []).map((cost) => cost.id).filter(Boolean));
+        const missingCosts = new Set(selectedBuilding?.detail?.missingCosts || []);
 
         this.resourceNodes.forEach((node, id) => {
             if (!ids.has(id)) {
@@ -256,13 +262,29 @@ export class TownScene {
             if (!node) {
                 node = document.createElement('div');
                 node.className = 'town-scene__resource';
+                node.tabIndex = 0;
+                const icon = document.createElement('span');
+                icon.className = 'town-scene__resource-icon';
+                icon.setAttribute('aria-hidden', 'true');
                 const value = document.createElement('strong');
                 const label = document.createElement('span');
-                node.append(value, label);
+                node.append(icon, value, label);
                 this.resourceNodes.set(resource.id, node);
             }
-            node.style.setProperty('--resource-accent', resource.accent);
-            const [value, label] = node.children;
+            node.classList.toggle('is-trending-up', resource.trend === 'positive');
+            node.classList.toggle('is-trending-down', resource.trend === 'negative');
+            node.classList.toggle('is-full', resource.warning === 'full');
+            node.classList.toggle('is-depleted', resource.warning === 'depleted');
+            node.classList.toggle('is-required', requiredCosts.has(resource.id));
+            node.classList.toggle('is-missing', missingCosts.has(resource.id));
+            const iconText = resource.iconText || String(resource.label || resource.id).slice(0,1);
+            const tooltip = resource.tooltip || `${resource.label}: ${resource.value}`;
+            node.title = tooltip;
+            node.setAttribute('aria-label', tooltip);
+            const [icon, value, label] = node.children;
+            if (icon.textContent !== iconText) {
+                icon.textContent = iconText;
+            }
             if (value.textContent !== resource.value) {
                 value.textContent = resource.value;
             }
@@ -286,6 +308,7 @@ export class TownScene {
                 buildings: this.snapshot.visualBuildings.filter((building) => building.district === district.id),
                 selectedBuilding,
                 commands: this.commands,
+                texts: this.snapshot.texts,
                 onSelectBuilding: (id) => this.selectBuilding(id),
                 onAction: (event) => this.handleBuildingAction(event),
                 onBack: () => this.selectDistrict(district.id, false)
@@ -387,6 +410,7 @@ export class TownScene {
         this.selectedBuildingId = '';
         this.panelKey = '';
         updateTownNodeSelection(this.nodes, district.id);
+        this.syncResourceDisplay();
         this.renderSelectedPanel(true);
         if (notify) {
             this.onSelectionChange(district);
@@ -403,6 +427,7 @@ export class TownScene {
         this.selectedBuildingId = building.id;
         this.panelKey = '';
         updateTownNodeSelection(this.nodes, building.district);
+        this.syncResourceDisplay();
         this.renderSelectedPanel(true);
     }
 

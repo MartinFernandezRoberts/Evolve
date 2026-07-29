@@ -29,10 +29,53 @@ function sortValue(value) {
 export function captureTownActionParityState(snapshot, buildingId) {
     const building = snapshot.visualBuildings.find((entry) => entry.id === buildingId) || null;
     return sortValue({
-        building: building ? { id: building.id, count: building.count, on: building.on, queue: building.detail?.queue || null } : null,
-        resources: snapshot.resources.map((resource) => ({ id: resource.id, amount: resource.amount, max: resource.max })),
-        workers: building?.detail?.workers || [],
+        building: building ? {
+            id: building.id,
+            count: building.count,
+            on: building.on,
+            active: building.active,
+            affordable: building.affordable,
+            queue: building.detail?.queue || null
+        } : null,
+        resources: snapshot.resources.map((resource) => ({ id: resource.id, amount: resource.amount, max: resource.max, diff: resource.diff, trade: resource.trade })),
+        workers: snapshot.context.workers.map((worker) => ({ id: worker.id, workers: worker.workers, assigned: worker.assigned, max: worker.max })),
         energy: snapshot.context.energy
+    });
+}
+
+/**
+ * Reduce una partida decodificada a los campos afectados por las acciones de
+ * ciudad. El entorno de navegador puede decodificar exportaciones con el
+ * importador/exportador original antes de entregar este objeto; el harness no
+ * conoce LZString ni muta la partida.
+ *
+ * @param {object} saveState Partida ya decodificada.
+ * @param {string[]} buildingIds Ids de ciudad que se contrastan.
+ */
+export function captureTownSaveParityState(saveState, buildingIds) {
+    const city = saveState?.city || {};
+    const civic = saveState?.civic || {};
+    return sortValue({
+        resources: Object.entries(saveState?.resource || {}).map(([id, resource]) => ({
+            id,
+            amount: resource?.amount,
+            max: resource?.max,
+            diff: resource?.diff,
+            trade: resource?.trade
+        })),
+        buildings: (buildingIds || []).map((id) => ({
+            id,
+            count: city[id]?.count,
+            on: city[id]?.on
+        })),
+        workers: Object.entries(civic)
+            .filter(([, worker]) => worker && typeof worker === 'object' && typeof worker.workers === 'number')
+            .map(([id, worker]) => ({ id, workers: worker.workers, assigned: worker.assigned, max: worker.max })),
+        energy: {
+            power: city.power,
+            power_total: city.power_total,
+            powered: city.powered
+        }
     });
 }
 

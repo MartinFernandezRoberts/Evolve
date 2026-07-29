@@ -6,7 +6,7 @@
  * contrato desde una entrada de sólo lectura sin cambiar TownScene.
  */
 
-export const TOWN_SCENE_CONTRACT_VERSION = 2;
+export const TOWN_SCENE_CONTRACT_VERSION = 3;
 
 /**
  * @typedef {'center'|'housing'|'agriculture'|'forest'|'quarry'|'science'|'religion'|'industry'|'government'|'military'} TownDistrictId
@@ -25,12 +25,22 @@ export const TOWN_SCENE_CONTRACT_VERSION = 2;
 /**
  * @typedef {Object} TownResource
  * @property {string} id Identificador estable para la presentación.
+ * @property {number} order Orden actual de la barra original.
  * @property {string} label Texto ya localizado por quien produzca el snapshot.
+ * @property {string} iconText Monograma derivado del nombre original; no es un asset externo.
+ * @property {string} tooltip Texto de ayuda preparado por el puente del motor.
  * @property {string} value Valor ya formateado, sin fórmulas en la escena.
- * @property {string} accent Color de presentación del recurso.
  * @property {number} amount Cantidad original, sin transformación de reglas.
  * @property {number} max Capacidad original del recurso.
  * @property {number} diff Variación calculada por el motor.
+ * @property {number|null} generation Generación que el motor publica para recursos especiales.
+ * @property {boolean} unlocked El motor ya habilitó este recurso.
+ * @property {boolean} visible Visibilidad original.
+ * @property {boolean} capacity Si el recurso tiene almacenamiento finito.
+ * @property {number} precision Precisión usada por el renderizador original.
+ * @property {'positive'|'negative'|'stable'} trend Tendencia a partir de `diff` original.
+ * @property {'none'|'full'|'negative'|'depleted'} warning Estado de barra ya resuelto por el puente.
+ * @property {{ enabled: boolean, amount: number, tradable: boolean }} trade Estado real de comercio si existe.
  */
 
 /**
@@ -39,6 +49,9 @@ export const TOWN_SCENE_CONTRACT_VERSION = 2;
  * @property {string} label Etiqueta de presentación.
  * @property {number} count Cantidad construida según el estado original.
  * @property {number|null} on Cantidad activa cuando la estructura la define.
+ * @property {number|null} active Alias de cantidad activa para consumidores de escena.
+ * @property {number|null} maximum Límite informado por la acción original, si existe.
+ * @property {string} state Estado de presentación resuelto por el puente.
  */
 
 /**
@@ -48,23 +61,32 @@ export const TOWN_SCENE_CONTRACT_VERSION = 2;
  * @property {string} label Nombre localizado por la acción original.
  * @property {number} count Cantidad construida; nunca determina el número de sprites.
  * @property {number|null} on Cantidad activa original cuando aplica.
+ * @property {number|null} active Cantidad activa original cuando aplica.
  * @property {boolean} unlocked Resultado de los requisitos originales.
+ * @property {boolean} locked Inverso explícito de `unlocked`.
  * @property {boolean|null} affordable Resultado de la asequibilidad original si está desbloqueado.
+ * @property {string} status Estado resuelto de bloqueo/construcción.
+ * @property {number|null} maximum Límite expuesto por la acción original, si existe.
  * @property {TownBuildingDetail|null} [detail] Engine-prepared detail panel data.
  */
 
 /**
  * @typedef {Object} TownBuildingCost
+ * @property {string|null} id Id de recurso o estructura cuando el renderizador lo expone.
  * @property {string} text Cost formatted by the original renderer.
  * @property {'sufficient'|'warning'|'insufficient'} status Engine-resolved availability.
+ * @property {number|null} amount Coste ya resuelto por el renderizador original cuando es numérico.
  */
 
 /**
  * @typedef {Object} TownBuildingWorker
  * @property {string} id Original Civics job id.
  * @property {string} label Localized engine label.
+ * @property {string} description Descripción/producción generada por el módulo original de empleos.
  * @property {number} workers Current worker count.
+ * @property {number} assigned Valor de asignación actual.
  * @property {number|null} max Original job capacity.
+ * @property {boolean} visible Visibilidad original del empleo.
  * @property {boolean} canAssign Original assignment constraints result.
  * @property {boolean} canRemove Original removal constraints result.
  */
@@ -74,9 +96,11 @@ export const TOWN_SCENE_CONTRACT_VERSION = 2;
  * @property {string} description Original action description without HTML markup.
  * @property {string} effect Original production or effect without HTML markup.
  * @property {TownBuildingCost[]} costs Current cost without scene-side calculation.
+ * @property {string[]} missingCosts Recursos o estructuras faltantes que informó el renderizador original.
  * @property {boolean} affordable Original complete affordability result.
  * @property {number[]} buildAmounts Multipliers supported by the original action.
  * @property {boolean} maxBuild Whether the engine offers a native build-max semantic.
+ * @property {number|null} maximum Límite de cola/construcción original si existe.
  * @property {{ value: number, direction: 'used'|'produced' }|null} energy Original `powered()` result.
  * @property {{ on: number, off: number }|null} enabled Active structure state.
  * @property {TownBuildingWorker[]} workers Related original jobs.
@@ -102,14 +126,15 @@ export const TOWN_SCENE_CONTRACT_VERSION = 2;
  * @property {{ id: string, label: string, type: string }} species Especie actual y su grupo original.
  * @property {{ id: string|null, label: string|null }} biome Bioma actual.
  * @property {string|null} planet Planeta de origen.
+ * @property {string|null} stage Etapa actual calculada por la etiqueta original de Civilización.
  * @property {number|null} season Estación codificada por el motor.
  * @property {number|null} weather Clima codificado por el motor.
  * @property {TownVisualEnvironment} environment Datos ambientales codificados por el motor; no son simulados por la escena.
  * @property {{ amount: number, max: number, label: string }} population Recurso de población original.
- * @property {{ id: string, workers: number, max: number|null }[]} workers Empleos con trabajadores.
+ * @property {{ id: string, label: string, description: string, workers: number, assigned: number, max: number|null, visible: boolean, canAssign: boolean, canRemove: boolean }[]} workers Empleos con trabajadores.
  * @property {TownBuilding[]} buildings Todas las estructuras urbanas construidas.
- * @property {{ id: string, level: number }[]} technologies Tecnologías numéricas activas.
- * @property {{ available: number|null, powered: boolean|null }} energy Estado de energía original disponible.
+ * @property {{ id: string, level: number, label: string, era: string|null }[]} technologies Tecnologías numéricas activas.
+ * @property {{ available: number|null, generated?: number|null, consumed?: number|null, powered: boolean|null }} energy Estado de energía original disponible.
  * @property {{ current: number|null, potential: number|null }} morale Moral original.
  * @property {{ id: string|null, label: string|null }} government Gobierno actual.
  */
@@ -130,6 +155,7 @@ export const TOWN_SCENE_CONTRACT_VERSION = 2;
  * @property {'mock'|'engine'} source Origen explícito de los datos.
  * @property {string} title Título de la escena ya localizado.
  * @property {string} subtitle Texto contextual ya localizado.
+ * @property {Record<string, string>} texts Cadenas del shell visual localizadas por el puente.
  * @property {TownResource[]} resources Datos resumidos de sólo lectura.
  * @property {TownDistrict[]} districts Distritos renderizables.
  * @property {TownVisualBuilding[]} visualBuildings Edificios reales admitidos por BuildingVisualRegistry.

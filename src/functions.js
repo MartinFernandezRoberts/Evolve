@@ -707,6 +707,25 @@ export function modRes(res,val,notrack){
     return success;
 }
 
+/**
+ * Resume el balance de energía usando los mismos valores que muestra el
+ * popover clásico. Centralizarlo evita que superficies alternativas vuelvan a
+ * expresar ese cálculo de presentación.
+ *
+ * @returns {{ available: number, generated: number, consumed: number, powered: boolean|null }|null}
+ */
+export function getCityEnergyStatus(){
+    if (typeof global.city?.power !== 'number' || typeof global.city?.power_total !== 'number'){
+        return null;
+    }
+    return {
+        available: +(global.city.power).toFixed(2),
+        generated: +(-global.city.power_total).toFixed(2),
+        consumed: +(global.city.power_total - global.city.power).toFixed(2),
+        powered: typeof global.city.powered === 'boolean' ? global.city.powered : null
+    };
+}
+
 export function genCivName(alt){
     let genus = global.race.maintype || races[global.race.species].type;
     switch (genus){

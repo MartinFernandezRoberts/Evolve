@@ -35,4 +35,7 @@ Revisar la demo en 1920×1080, 1366×768, 1024×768 y 390×844. En anchos menore
 
 `TownScene` recibe un `TownSnapshot` documentado con JSDoc. El adaptador de juego produce el mismo contrato desde una entrada de sólo lectura y el prototipo puede abrirse también desde la pestaña de ciudad: activar **Visual Remaster** en Settings y seleccionar **Vista gráfica**. La demo conserva sus datos mock aislados.
 
-Esta fase aún no conecta compras: el panel visual es informativo y la vista clásica conserva las acciones originales. El contrato completo está en `TOWN_SNAPSHOT.md`.
+En una partida real, el panel visual construye, alterna energía y ajusta los
+empleos asociados mediante las rutas originales. La demo conserva sus mocks y
+no ejecuta acciones de partida. El contrato completo está en
+`TOWN_SNAPSHOT.md`.

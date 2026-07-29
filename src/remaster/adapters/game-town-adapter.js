@@ -3,80 +3,131 @@ import { BUILDING_VISUAL_REGISTRY } from '../config/building-visual-registry.js'
 import { TOWN_DISTRICT_LAYOUT } from '../config/town-layout.js';
 import { TOWN_SCENE_CONTRACT_VERSION } from './town-scene-contracts.js';
 
-const resourceAccents = ['#f6c65f', '#d88a4b', '#a9c1c7', '#70d7dc', '#ffd668', '#c68de8'];
-
-function humanizeId(id) {
-    return String(id).replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+function finiteNumber(value, fallback = null) {
+    return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
-function formatAmount(value) {
-    return typeof value === 'number' && !Number.isNaN(value)
-        ? value.toLocaleString(undefined, { maximumFractionDigits: 2 })
-        : '0';
+function freezeSnapshot(value) {
+    if (!value || typeof value !== 'object' || Object.isFrozen(value)) {
+        return value;
+    }
+    Object.keys(value).forEach((key) => freezeSnapshot(value[key]));
+    return Object.freeze(value);
 }
 
-function buildTownBuilding(id, cityState) {
+function buildTownBuilding(id, cityState, presentation = {}) {
     return {
         id,
-        label: humanizeId(id),
-        count: Number(cityState?.count || 0),
-        on: typeof cityState?.on === 'number' ? cityState.on : null
+        label: typeof presentation.label === 'string' ? presentation.label : id,
+        count: finiteNumber(cityState?.count, 0),
+        on: finiteNumber(cityState?.on),
+        active: finiteNumber(cityState?.on),
+        maximum: finiteNumber(presentation.maximum),
+        state: typeof presentation.state === 'string' ? presentation.state : (cityState?.count > 0 ? 'built' : 'available')
     };
 }
 
-function getAllBuildings(gameState) {
+function getAllBuildings(gameState, engineReader) {
     return Object.entries(gameState.city || {})
         .filter(([, value]) => value && typeof value === 'object' && typeof value.count === 'number' && value.count > 0)
-        .map(([id, value]) => buildTownBuilding(id, value));
+        .map(([id, value]) => buildTownBuilding(id, value, engineReader.readBuiltBuilding?.(id, value) || {}));
 }
 
-function getResources(gameState) {
+function getResources(gameState, engineReader) {
     return Object.entries(gameState.resource || {})
         .filter(([, resource]) => resource && resource.display)
-        .map(([id, resource], index) => ({
-            id,
-            label: resource.name || humanizeId(id),
-            value: resource.max >= 0 ? `${formatAmount(resource.amount)} / ${formatAmount(resource.max)}` : formatAmount(resource.amount),
-            accent: resourceAccents[index % resourceAccents.length],
-            amount: Number(resource.amount || 0),
-            max: typeof resource.max === 'number' ? resource.max : -1,
-            diff: Number(resource.diff || 0)
-        }));
+        .map(([id, resource], order) => {
+            const presentation = engineReader.readResource?.(id, resource, order) || {};
+            return {
+                id,
+                order: finiteNumber(presentation.order, order),
+                label: typeof presentation.label === 'string' ? presentation.label : (resource.name || id),
+                iconText: typeof presentation.iconText === 'string' ? presentation.iconText : String(resource.name || id).slice(0, 1),
+                tooltip: typeof presentation.tooltip === 'string' ? presentation.tooltip : (resource.name || id),
+                value: typeof presentation.value === 'string' ? presentation.value : String(resource.amount || 0),
+                amount: finiteNumber(resource.amount, 0),
+                max: finiteNumber(resource.max, -1),
+                diff: finiteNumber(resource.diff, 0),
+                generation: finiteNumber(resource.gen),
+                unlocked: resource.display === true,
+                visible: true,
+                capacity: finiteNumber(resource.max, -1) >= 0,
+                precision: finiteNumber(presentation.precision, 2),
+                trend: typeof presentation.trend === 'string' ? presentation.trend : 'stable',
+                warning: typeof presentation.warning === 'string' ? presentation.warning : 'none',
+                trade: presentation.trade && typeof presentation.trade === 'object'
+                    ? {
+                        enabled: presentation.trade.enabled === true,
+                        amount: finiteNumber(presentation.trade.amount, 0),
+                        tradable: presentation.trade.tradable === true
+                    }
+                    : { enabled: false, amount: 0, tradable: false }
+            };
+        })
+        .sort((left, right) => left.order - right.order);
 }
 
-function getWorkers(gameState) {
+function getWorkers(gameState, engineReader) {
     return Object.entries(gameState.civic || {})
         .filter(([, civic]) => civic && typeof civic === 'object' && typeof civic.workers === 'number')
-        .map(([id, civic]) => ({ id, workers: civic.workers, max: typeof civic.max === 'number' ? civic.max : null }));
+        .map(([id, civic]) => {
+            const presentation = engineReader.readWorker?.(id, civic) || {};
+            return {
+                id,
+                label: typeof presentation.label === 'string' ? presentation.label : (civic.name || id),
+                description: typeof presentation.description === 'string' ? presentation.description : '',
+                workers: finiteNumber(civic.workers, 0),
+                assigned: finiteNumber(civic.assigned, finiteNumber(civic.workers, 0)),
+                max: finiteNumber(civic.max),
+                visible: civic.display === true,
+                canAssign: presentation.canAssign === true,
+                canRemove: presentation.canRemove === true
+            };
+        });
 }
 
-function getTechnologies(gameState) {
+function getTechnologies(gameState, engineReader) {
     return Object.entries(gameState.tech || {})
         .filter(([, level]) => typeof level === 'number' && level > 0)
-        .map(([id, level]) => ({ id, level }));
+        .map(([id, level]) => {
+            const presentation = engineReader.readTechnology?.(id, level) || {};
+            return {
+                id,
+                level,
+                label: typeof presentation.label === 'string' ? presentation.label : id,
+                era: typeof presentation.era === 'string' ? presentation.era : null
+            };
+        });
 }
 
-function getEnvironment(city, calendar) {
+function getEnvironment(city, calendar, engineReader) {
+    const presentation = engineReader.readEnvironment?.(city, calendar) || {};
     return {
-        season: typeof calendar.season === 'number' ? calendar.season : null,
-        weather: typeof calendar.weather === 'number' ? calendar.weather : null,
-        temperature: typeof calendar.temp === 'number' ? calendar.temp : null,
-        wind: typeof calendar.wind === 'number' ? calendar.wind : null,
-        day: typeof calendar.day === 'number' ? calendar.day : null,
+        season: finiteNumber(calendar.season),
+        seasonLabel: typeof presentation.seasonLabel === 'string' ? presentation.seasonLabel : null,
+        weather: finiteNumber(calendar.weather),
+        weatherLabel: typeof presentation.weatherLabel === 'string' ? presentation.weatherLabel : null,
+        temperature: finiteNumber(calendar.temp),
+        temperatureLabel: typeof presentation.temperatureLabel === 'string' ? presentation.temperatureLabel : null,
+        wind: finiteNumber(calendar.wind),
+        day: finiteNumber(calendar.day),
         planetTraits: Array.isArray(city.ptrait) ? city.ptrait.filter((trait) => typeof trait === 'string') : []
     };
 }
 
-function makeDistrict(layout, city) {
-    const buildings = layout.buildingIds.map((id) => buildTownBuilding(id, city[id])).filter((building) => building.count > 0);
+function makeDistrict(layout, city, engineReader) {
+    const buildings = layout.buildingIds
+        .map((id) => buildTownBuilding(id, city[id]))
+        .filter((building) => building.count > 0);
     const count = buildings.reduce((total, building) => total + building.count, 0);
+    const presentation = engineReader.readDistrict?.(layout.id, count, buildings) || {};
 
     return {
         id: layout.id,
-        label: layout.label,
-        summary: count > 0 ? `${count} estructuras construidas en este distrito.` : 'Todavía no hay estructuras construidas en este distrito.',
-        detail: count > 0 ? 'Los contadores proceden directamente del estado de ciudad original.' : 'El distrito permanece disponible como referencia visual mientras se desbloquea en el juego.',
-        status: count > 0 ? `${count} construidas` : 'Sin construir',
+        label: typeof presentation.label === 'string' ? presentation.label : layout.id,
+        summary: typeof presentation.summary === 'string' ? presentation.summary : '',
+        detail: typeof presentation.detail === 'string' ? presentation.detail : '',
+        status: typeof presentation.status === 'string' ? presentation.status : String(count),
         accent: layout.accent,
         position: { ...layout.position },
         art: layout.art,
@@ -87,40 +138,60 @@ function makeDistrict(layout, city) {
 
 /**
  * @param {object} city
- * @param {(id: string) => { label?: string, unlocked?: boolean, affordable?: boolean }|undefined} [readVisualBuildingState]
+ * @param {TownEngineReader} engineReader
  * @returns {import('./town-scene-contracts.js').TownVisualBuilding[]}
  */
-function getVisualBuildings(city, readVisualBuildingState) {
+function getVisualBuildings(city, engineReader) {
     return BUILDING_VISUAL_REGISTRY.map((definition) => {
         const cityState = city[definition.id];
-        const originalState = readVisualBuildingState ? (readVisualBuildingState(definition.id) || {}) : {};
-        const count = Number(cityState?.count || 0);
+        const originalState = engineReader.readBuilding?.(definition.id) || {};
+        const count = finiteNumber(cityState?.count, 0);
+        const unlocked = count > 0 || originalState.unlocked === true;
 
         return {
             id: definition.id,
             district: definition.district,
-            label: typeof originalState.label === 'string' ? originalState.label : humanizeId(definition.id),
+            label: typeof originalState.label === 'string' ? originalState.label : definition.id,
             count,
-            on: typeof cityState?.on === 'number' ? cityState.on : null,
-            unlocked: count > 0 || originalState.unlocked === true,
+            on: finiteNumber(cityState?.on),
+            active: finiteNumber(cityState?.on),
+            unlocked,
+            locked: !unlocked,
             affordable: typeof originalState.affordable === 'boolean' ? originalState.affordable : null,
+            status: typeof originalState.status === 'string' ? originalState.status : (unlocked ? (count > 0 ? 'built' : 'available') : 'locked'),
+            maximum: finiteNumber(originalState.maximum),
             detail: originalState.detail && typeof originalState.detail === 'object' ? originalState.detail : null
         };
     });
 }
 
 /**
- * Transforma un estado real de Evolve en un contrato exclusivamente de lectura.
+ * Información ya resuelta por funciones o renderizadores originales del juego.
+ * El adaptador sólo copia esos valores al DTO y nunca implementa reglas.
  *
- * No importa el estado de módulo: el llamador le pasa el objeto actual y el
- * adaptador no conserva referencias a él. No evalúa costes, producción, requisitos ni
- * fórmulas; se limita a seleccionar y presentar valores ya calculados.
+ * @typedef {Object} TownEngineReader
+ * @property {(id: string, resource: object, order: number) => object} [readResource]
+ * @property {(id: string, building: object) => object} [readBuiltBuilding]
+ * @property {(id: string) => object} [readBuilding]
+ * @property {(id: string, worker: object) => object} [readWorker]
+ * @property {(id: string, level: number) => object} [readTechnology]
+ * @property {(id: string, count: number, buildings: object[]) => object} [readDistrict]
+ * @property {(city: object, calendar: object) => object} [readEnvironment]
+ * @property {(gameState: object) => object} [readContext]
+ */
+
+/**
+ * Transforma un estado real de Evolve en un `TownSnapshot` inmutable.
+ *
+ * El único parámetro de estado viene del puente de motor. Ningún componente de
+ * escena recibe una referencia a él y este módulo no evalúa costes,
+ * producción, requisitos ni fórmulas.
  *
  * @param {object} gameState Estado actual de Evolve proporcionado por el integrador.
- * @param {(id: string) => { label?: string, unlocked?: boolean, affordable?: boolean }|undefined} [readVisualBuildingState] Puente hacia comprobaciones originales del integrador.
+ * @param {TownEngineReader} [engineReader] Puente de presentaciones ya calculadas.
  * @returns {import('./town-scene-contracts.js').TownSnapshot}
  */
-export function createGameTownSnapshot(gameState, readVisualBuildingState) {
+export function createGameTownSnapshot(gameState, engineReader = {}) {
     const speciesId = gameState.race?.species || 'unknown';
     const species = races[speciesId] || {};
     const biomeId = gameState.city?.biome || null;
@@ -129,32 +200,54 @@ export function createGameTownSnapshot(gameState, readVisualBuildingState) {
     const city = gameState.city || {};
     const calendar = city.calendar || {};
     const government = gameState.civic?.govern || {};
-    const resources = getResources(gameState);
-    const buildings = getAllBuildings(gameState);
-    const visualBuildings = getVisualBuildings(city, readVisualBuildingState);
+    const contextPresentation = engineReader.readContext?.(gameState) || {};
+    const resources = getResources(gameState, engineReader);
+    const buildings = getAllBuildings(gameState, engineReader);
+    const visualBuildings = getVisualBuildings(city, engineReader);
 
-    return {
+    return freezeSnapshot({
         contractVersion: TOWN_SCENE_CONTRACT_VERSION,
         source: 'engine',
-        title: 'Visual Remaster',
-        subtitle: 'Vista gráfica de Civilización basada en el estado actual de la partida.',
+        title: typeof contextPresentation.title === 'string' ? contextPresentation.title : 'Civilization',
+        subtitle: typeof contextPresentation.subtitle === 'string' ? contextPresentation.subtitle : '',
+        texts: contextPresentation.texts && typeof contextPresentation.texts === 'object' ? { ...contextPresentation.texts } : {},
         resources,
-        districts: TOWN_DISTRICT_LAYOUT.map((layout) => makeDistrict(layout, city)),
+        districts: TOWN_DISTRICT_LAYOUT.map((layout) => makeDistrict(layout, city, engineReader)),
         visualBuildings,
         context: {
-            species: { id: speciesId, label: species.name || humanizeId(speciesId), type: species.type || 'other' },
-            biome: { id: biomeId, label: biome.label || biomeId },
-            planet: species.home || null,
-            season: typeof calendar.season === 'number' ? calendar.season : null,
-            weather: typeof calendar.weather === 'number' ? calendar.weather : null,
-            environment: getEnvironment(city, calendar),
-            population: { amount: Number(populationResource.amount || 0), max: typeof populationResource.max === 'number' ? populationResource.max : 0, label: populationResource.name || humanizeId(speciesId) },
-            workers: getWorkers(gameState),
+            species: {
+                id: speciesId,
+                label: typeof contextPresentation.speciesLabel === 'string' ? contextPresentation.speciesLabel : (species.name || speciesId),
+                type: species.type || 'other'
+            },
+            biome: {
+                id: biomeId,
+                label: typeof contextPresentation.biomeLabel === 'string' ? contextPresentation.biomeLabel : (biome.label || biomeId)
+            },
+            planet: typeof contextPresentation.planet === 'string' ? contextPresentation.planet : (species.home || null),
+            stage: typeof contextPresentation.stage === 'string' ? contextPresentation.stage : null,
+            season: finiteNumber(calendar.season),
+            weather: finiteNumber(calendar.weather),
+            environment: getEnvironment(city, calendar, engineReader),
+            population: {
+                amount: finiteNumber(populationResource.amount, 0),
+                max: finiteNumber(populationResource.max, 0),
+                label: typeof contextPresentation.populationLabel === 'string' ? contextPresentation.populationLabel : (populationResource.name || speciesId)
+            },
+            workers: getWorkers(gameState, engineReader),
             buildings,
-            technologies: getTechnologies(gameState),
-            energy: { available: typeof city.power === 'number' ? city.power : null, powered: typeof city.powered === 'boolean' ? city.powered : null },
-            morale: { current: typeof city.morale?.current === 'number' ? city.morale.current : null, potential: typeof city.morale?.potential === 'number' ? city.morale.potential : null },
-            government: { id: government.type || null, label: government.type ? humanizeId(government.type) : null }
+            technologies: getTechnologies(gameState, engineReader),
+            energy: contextPresentation.energy && typeof contextPresentation.energy === 'object'
+                ? { ...contextPresentation.energy }
+                : { available: finiteNumber(city.power), powered: typeof city.powered === 'boolean' ? city.powered : null },
+            morale: {
+                current: finiteNumber(city.morale?.current),
+                potential: finiteNumber(city.morale?.potential)
+            },
+            government: {
+                id: government.type || null,
+                label: typeof contextPresentation.governmentLabel === 'string' ? contextPresentation.governmentLabel : (government.type || null)
+            }
         }
-    };
+    });
 }
