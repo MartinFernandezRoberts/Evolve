@@ -23,7 +23,9 @@ original preasignada.
 - Los estilos CSS animan sólo transformación, opacidad o filtro en un conjunto
   reducido de elementos. No modifican el estado del juego.
 - Al ocultarse la pestaña, el gestor deja de solicitar snapshots y la escena
-  pausa las animaciones. Al volver, solicita un snapshot puntual.
+  pausa las animaciones. Al volver, solicita un snapshot puntual. Los eventos
+  `focus` y `pageshow` repiten esta sincronización para restauraciones donde la
+  visibilidad no se notifica de inmediato.
 - Se usa el indicio conservador `hardwareConcurrency <= 2` o `deviceMemory <= 2`
   cuando el navegador lo expone para reducir el presupuesto. Si no lo expone,
   se mantiene el perfil normal.

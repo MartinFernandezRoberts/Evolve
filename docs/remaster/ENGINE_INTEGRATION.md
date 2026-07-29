@@ -12,7 +12,7 @@ serialización siguen siendo la única autoridad de juego. Ningún módulo de
 | Estado y guardado | `global`/`save` en `src/vars.js` | Se entrega al adaptador como entrada de sólo lectura. |
 | Ciudad y requisitos | `actions.city`/`drawCity()` en `src/actions.js` | `drawCity()` conserva su render clásico y sincroniza la capa visual al final. |
 | Recursos y progreso | `fastLoop`, `midLoop`, `longLoop`, `modRes()` | El snapshot lee valores ya calculados; no replica fórmulas. |
-| Compra y cola | `runAction()`, `payCosts()`, `postBuild()` | Fuera de alcance por ahora; los controles visuales de acción siguen deshabilitados. |
+| Compra y cola | `runAction()`, `payCosts()`, `postBuild()` | `runVisualCityBuild()` delega en la misma ruta con una cantidad explícita; no recalcula costes ni requisitos. |
 | Importar/exportar | `importGame()`/`exportGame()` | No se interceptan ni se cambia su codificación. |
 
 ## Feature flag y persistencia
@@ -46,24 +46,27 @@ raíz DOM, listeners ni temporizadores.
    tarjetas de ciudad; la vista clásica las vuelve a mostrar de inmediato.
 
 El gestor `src/remaster/scene/town-scene-manager.js` limita las lecturas a una
-vez por segundo, omite el documento oculto y destruye SVG, listener de
-visibilidad, listener de clic y temporizador al apagar el flag, abandonar la
-pestaña o perder su raíz. `TownScene.setSnapshot()` actualiza recursos, marcas
-y panel de forma diferencial; no reconstruye el mapa salvo que cambie su
-estructura visual.
+vez por segundo, omite el documento oculto y destruye SVG, listeners de clic,
+visibilidad, foco y restauración de página, además del temporizador, al apagar
+el flag, abandonar la pestaña o perder su raíz. El foco y `pageshow` vuelven a
+sincronizar el estado como respaldo para restauraciones del navegador.
+`TownScene.setSnapshot()` actualiza recursos, marcas y panel de forma
+diferencial; no reconstruye el mapa salvo que cambie su estructura visual.
 
-## Acciones futuras
+## Acciones delegadas
 
-El prototipo conectado es intencionalmente de sólo lectura. Al activar compras
-visuales se debe añadir un wrapper mínimo en `src/actions.js` que delegue la
-intención hacia la ruta pública original:
+Los controles visuales usan wrappers mínimos de `src/actions.js` que delegan la
+intención hacia la ruta original:
 
 ```text
 nodo visual -> wrapper de actions.js -> runAction(...) -> motor existente
 ```
 
-No se debe invocar `actions.city[id].action()` directamente ni mutar la partida
-desde el adaptador o los componentes.
+También se reutilizan `setActionPower()` y `changeJobWorkers()` para energía y
+trabajadores. No se invoca `actions.city[id].action()` directamente desde la
+escena ni se muta la partida desde el adaptador o los componentes. El detalle y
+la lista de costes se preparan con los renderizadores y comprobaciones del motor
+antes de cruzar la frontera `TownSnapshot`.
 
 ## Contrato de estado
 

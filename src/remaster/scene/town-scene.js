@@ -64,6 +64,9 @@ export class TownScene {
         this.boundPointerUp = this.handlePointerUp.bind(this);
         this.boundKeyDown = this.handleMapKeyDown.bind(this);
         this.boundMotionPreferenceChange = this.handleMotionPreferenceChange.bind(this);
+        this.boundZoomIn = () => this.setZoom(this.zoom + zoomStep);
+        this.boundZoomOut = () => this.setZoom(this.zoom - zoomStep);
+        this.boundResetView = () => this.resetView();
         this.motion = {
             hidden: typeof document !== 'undefined' && document.hidden,
             lowPower: detectLowPowerDevice(),
@@ -291,9 +294,12 @@ export class TownScene {
     }
 
     bindInteractions() {
-        this.root.querySelector('[data-town-control="zoom-in"]').addEventListener('click', () => this.setZoom(this.zoom + zoomStep));
-        this.root.querySelector('[data-town-control="zoom-out"]').addEventListener('click', () => this.setZoom(this.zoom - zoomStep));
-        this.root.querySelector('[data-town-control="reset"]').addEventListener('click', () => this.resetView());
+        this.zoomInButton = this.root.querySelector('[data-town-control="zoom-in"]');
+        this.zoomOutButton = this.root.querySelector('[data-town-control="zoom-out"]');
+        this.resetViewButton = this.root.querySelector('[data-town-control="reset"]');
+        this.zoomInButton.addEventListener('click', this.boundZoomIn);
+        this.zoomOutButton.addEventListener('click', this.boundZoomOut);
+        this.resetViewButton.addEventListener('click', this.boundResetView);
         this.svg.addEventListener('wheel', this.boundWheel, { passive: false });
         this.svg.addEventListener('pointerdown', this.boundPointerDown);
         this.svg.addEventListener('pointermove', this.boundPointerMove);
@@ -434,6 +440,9 @@ export class TownScene {
         this.svg.removeEventListener('pointerup', this.boundPointerUp);
         this.svg.removeEventListener('pointercancel', this.boundPointerUp);
         this.svg.removeEventListener('keydown', this.boundKeyDown);
+        this.zoomInButton?.removeEventListener('click', this.boundZoomIn);
+        this.zoomOutButton?.removeEventListener('click', this.boundZoomOut);
+        this.resetViewButton?.removeEventListener('click', this.boundResetView);
         this.root.replaceChildren();
         this.nodes = [];
         this.nodeById.clear();

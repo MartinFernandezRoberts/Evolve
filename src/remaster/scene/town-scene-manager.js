@@ -24,6 +24,7 @@ class TownSceneManager {
         this.destroyed = false;
         this.boundClick = this.handleClick.bind(this);
         this.boundVisibilityChange = this.handleVisibilityChange.bind(this);
+        this.boundResume = this.handleResume.bind(this);
     }
 
     /** @param {TownSceneManagerOptions} options */
@@ -47,6 +48,8 @@ class TownSceneManager {
         this.sceneHost = this.root.querySelector('.visual-remaster__scene-host');
         this.root.addEventListener('click', this.boundClick);
         document.addEventListener('visibilitychange', this.boundVisibilityChange);
+        window.addEventListener('focus', this.boundResume);
+        window.addEventListener('pageshow', this.boundResume);
         this.host.append(this.root);
         this.setView(view);
     }
@@ -118,6 +121,17 @@ class TownSceneManager {
         }
     }
 
+    /** Cubre restauraciones de pestaña donde el navegador no emite visibilidad. */
+    handleResume() {
+        if (this.view !== 'scene') {
+            return;
+        }
+        this.scene?.setMotionState({ hidden: document.hidden });
+        if (!document.hidden) {
+            this.refreshSnapshot();
+        }
+    }
+
     /** Reflects a command immediately instead of waiting for the one-second sample. */
     handleSceneAction() {
         this.refreshSnapshot();
@@ -156,6 +170,8 @@ class TownSceneManager {
         this.stopUpdates();
         this.destroyScene();
         document.removeEventListener('visibilitychange', this.boundVisibilityChange);
+        window.removeEventListener('focus', this.boundResume);
+        window.removeEventListener('pageshow', this.boundResume);
         this.root?.removeEventListener('click', this.boundClick);
         this.host?.classList.remove('visual-remaster-scene', 'visual-remaster-classic');
         this.root?.remove();
