@@ -687,6 +687,7 @@
     .town-scene__paths path {
         stroke-dasharray: 2 1;
         filter: drop-shadow(0 4px 0 rgba(33, 72, 63, .38));
+        transition: opacity .28s ease;
     }
 
     .town-scene__trees path {
@@ -771,17 +772,53 @@
     .town-scene[data-town-growth="village"] .town-scene__kenney-roads,
     .town-scene[data-town-growth="town"] .town-scene__kenney-roads,
     .town-scene[data-town-growth="industrial"] .town-scene__kenney-roads,
-    .town-scene[data-town-growth="electrified"] .town-scene__kenney-roads {
+    .town-scene[data-town-growth="electrified"] .town-scene__kenney-roads,
+    .town-scene[data-town-growth="advanced"] .town-scene__kenney-roads {
         opacity: 1;
     }
 
     .town-scene[data-town-growth="industrial"] .town-scene__terrain-shade,
-    .town-scene[data-town-growth="electrified"] .town-scene__terrain-shade {
+    .town-scene[data-town-growth="electrified"] .town-scene__terrain-shade,
+    .town-scene[data-town-growth="advanced"] .town-scene__terrain-shade {
         opacity: .16;
     }
 
     .town-scene[data-town-growth="electrified"] .town-building.is-on .town-building__raster {
         filter: saturate(1.16) brightness(1.08) drop-shadow(0 0 4px rgba(255, 220, 120, .45));
+    }
+
+    // El asentamiento inicial hereda el mismo terreno, pero no dibuja una
+    // ciudad ficticia. Las parcelas desbloqueadas y los edificios del snapshot
+    // siguen siendo interactivos; un camino aparece sólo con su distrito.
+    .town-scene[data-town-settlement="early-settlement"] .town-node:not(.has-built-structure) .town-node__landmark {
+        display: none;
+    }
+
+    .town-scene[data-town-settlement="early-settlement"] .town-node:not(.has-built-structure) .town-node__marker {
+        display: none;
+    }
+
+    .town-scene[data-town-settlement="early-settlement"] .town-scene__kenney-roads {
+        opacity: 0;
+    }
+
+    .town-scene[data-town-settlement="early-settlement"] .town-scene__path {
+        opacity: 0;
+    }
+
+    .town-scene[data-town-settlement="early-settlement"].has-district-housing .town-scene__path--center-housing,
+    .town-scene[data-town-settlement="early-settlement"].has-district-government .town-scene__path--center-government,
+    .town-scene[data-town-settlement="early-settlement"].has-district-agriculture .town-scene__path--center-agriculture,
+    .town-scene[data-town-settlement="early-settlement"].has-district-religion .town-scene__path--center-religion,
+    .town-scene[data-town-settlement="early-settlement"].has-district-industry .town-scene__path--center-industry,
+    .town-scene[data-town-settlement="early-settlement"].has-district-science .town-scene__path--center-science,
+    .town-scene[data-town-settlement="early-settlement"].has-district-military .town-scene__path--center-military,
+    .town-scene[data-town-settlement="early-settlement"].has-district-forest.has-district-quarry .town-scene__path--forest-quarry {
+        opacity: 1;
+    }
+
+    .town-scene[data-town-settlement="early-settlement"].has-settlement-paths .town-scene__water-line {
+        animation-duration: 3.2s;
     }
 
     .town-building {

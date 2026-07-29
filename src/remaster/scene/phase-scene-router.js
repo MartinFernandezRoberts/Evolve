@@ -206,26 +206,30 @@ class StaticPhaseSceneManager {
 }
 
 let activeStaticScene = null;
-let activeCivilizationScene = null;
+let activeTownPhaseScene = null;
+let activeTownPhaseKind = null;
 
 function destroyStaticScene() {
     activeStaticScene?.destroy();
     activeStaticScene = null;
 }
 
-function destroyCivilizationScene() {
-    activeCivilizationScene?.destroy();
-    activeCivilizationScene = null;
+function destroyTownPhaseScene() {
+    activeTownPhaseScene?.destroy();
+    activeTownPhaseScene = null;
+    activeTownPhaseKind = null;
 }
 
-function getCivilizationOptions(options) {
+function getTownOptions(options, expectedKind) {
     return {
         host: options.host,
         enabled: options.enabled,
         view: options.view,
         readSnapshot() {
             const snapshot = options.readSnapshot();
-            if (!isRemasterPhaseSnapshot(snapshot) || resolveRemasterPhaseScene(snapshot) !== 'civilization' || !snapshot.civilization.town) {
+            const receivedKind = isRemasterPhaseSnapshot(snapshot) ? resolveRemasterPhaseScene(snapshot) : 'unsupported';
+            const transitionedFromSettlement = expectedKind === 'early-settlement' && receivedKind === 'civilization';
+            if (!isRemasterPhaseSnapshot(snapshot) || (!transitionedFromSettlement && receivedKind !== expectedKind) || !snapshot.civilization.town) {
                 throw new Error('CivilizationTownScene recibió una fase no compatible.');
             }
             return snapshot.civilization.town;
@@ -251,24 +255,26 @@ export function syncRemasterPhaseScene(options) {
     const kind = resolveRemasterPhaseScene(snapshot);
     if (kind === 'unsupported') {
         destroyStaticScene();
-        destroyCivilizationScene();
+        destroyTownPhaseScene();
         return;
     }
 
-    if (kind === 'civilization') {
+    if (kind === 'civilization' || kind === 'early-settlement') {
         destroyStaticScene();
-        const civilizationOptions = getCivilizationOptions(options);
-        if (!activeCivilizationScene) {
-            activeCivilizationScene = new CivilizationTownScene(civilizationOptions);
-            activeCivilizationScene.mount();
+        const townOptions = getTownOptions(options, kind);
+        if (!activeTownPhaseScene || activeTownPhaseKind !== kind) {
+            destroyTownPhaseScene();
+            activeTownPhaseScene = new sceneConstructors[kind](townOptions);
+            activeTownPhaseKind = kind;
+            activeTownPhaseScene.mount();
         }
         else {
-            activeCivilizationScene.sync(civilizationOptions);
+            activeTownPhaseScene.sync(townOptions);
         }
         return;
     }
 
-    destroyCivilizationScene();
+    destroyTownPhaseScene();
     if (!activeStaticScene || activeStaticScene.host !== options.host || activeStaticScene.kind !== kind || !activeStaticScene.isMounted()) {
         destroyStaticScene();
         activeStaticScene = new StaticPhaseSceneManager(options, kind, snapshot);
@@ -280,5 +286,5 @@ export function syncRemasterPhaseScene(options) {
 /** Limpieza centralizada para cambio de pestaña, importación y flag apagado. */
 export function destroyRemasterPhaseScene() {
     destroyStaticScene();
-    destroyCivilizationScene();
+    destroyTownPhaseScene();
 }

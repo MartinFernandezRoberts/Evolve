@@ -132,11 +132,17 @@ no contiene un umbral de población o una fórmula duplicada. Las pantallas de
 creación de raza/planeta, selección semillada, Big Bang y fases no cubiertas
 devuelven `UnsupportedPhaseScene`, que no monta UI y deja el clásico operativo.
 
-`CivilizationTownScene` es un adaptador del `TownSceneManager` existente, por
-lo que conserva el `TownSnapshot` v4, el muestreo limitado, la limpieza y el
-`GameActionBridge`. Evolution, transición y asentamiento son sólo lectura en
-esta entrega; cualquier acción futura deberá añadir un método delegado al
-puente, no mutar `global` desde una escena.
+`EarlySettlementScene` y `CivilizationTownScene` son adaptadores del mismo
+`TownSceneManager`. Ambos conservan el `TownSnapshot` v5, el muestreo limitado,
+la limpieza y el `GameActionBridge`; el primero sólo activa una composición
+vacía hasta que el motor confirme estructuras. Evolution y la transición
+mantienen sus escenas propias. Cualquier acción futura deberá añadir un método
+delegado al puente, no mutar `global` desde una escena.
+
+Los enlaces de fallback del lateral usan `openVisualClassicPanel(panel)` en el
+puente autorizado. Ese wrapper sólo selecciona los tabs ya existentes mediante
+`loadTab()` (ciudad, investigación, gobierno, ejército, mercado y ajustes) y
+deja que la UI clásica continúe dibujando sus propios controles.
 
 El contrato completo y la tabla de rutas están en
 [`PHASE_ARCHITECTURE.md`](PHASE_ARCHITECTURE.md); la cobertura entre el motor y
@@ -146,7 +152,7 @@ la wiki fuente está en [`WIKI_COVERAGE.md`](WIKI_COVERAGE.md).
 
 El adaptador de ciudad construye una vez un catálogo visual desde las
 definiciones originales `genus_def`, `races`, `biomes` y `planetTraits`. Para
-cada `TownSnapshot` v4 inserta un `context.visual` inmutable con el resultado
+cada `TownSnapshot` v5 inserta un `context.visual` inmutable con el resultado
 de la composición de raza, bioma, era tecnológica, estación, clima, rasgos y
 edificios ya presentes. No se lee ni escribe `global` desde `src/remaster/`.
 

@@ -43,7 +43,32 @@ function createButton(label, focusKey, disabled, onClick, className = '') {
     return button;
 }
 
-function renderDistrictPanel(panel, district, source, buildings, onSelectBuilding) {
+const classicPanels = Object.freeze([
+    { id: 'city', label: () => loc('city') },
+    { id: 'research', label: () => loc('tab_research') },
+    { id: 'government', label: () => loc('tab_gov') },
+    { id: 'military', label: () => loc('tab_military') },
+    { id: 'trade', label: () => loc('tab_market') },
+    { id: 'settings', label: () => loc('tab_settings') }
+]);
+
+function renderClassicPanelLinks(panel, commands, onAction, hasClassicFallback) {
+    if (!commands?.openClassicPanel) {
+        return;
+    }
+    const heading = createElement('h3', 'town-scene__subheading', loc('remaster_classic_view'));
+    const group = createElement('div', 'town-scene__action-group town-scene__action-group--classic');
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-label', loc('remaster_classic_view'));
+    classicPanels.forEach((entry) => {
+        group.append(createButton(entry.label(), `classic-${entry.id}`, false, () => {
+            renderActionResult(commands.openClassicPanel(entry.id), onAction, 'classic', entry.id);
+        }, entry.id === 'city' && hasClassicFallback ? 'town-scene__action--classic-fallback' : 'town-scene__action--classic'));
+    });
+    panel.append(heading, group);
+}
+
+function renderDistrictPanel(panel, district, source, buildings, onSelectBuilding, commands, onAction, hasClassicFallback) {
     const eyebrow = createElement('p', 'town-scene__panel-eyebrow', source === 'mock' ? loc('remaster_demo_data') : loc('remaster_civilization_view'));
     const heading = createElement('h2', '', district.label);
     const status = createElement('p', 'town-scene__status', district.status);
@@ -66,6 +91,7 @@ function renderDistrictPanel(panel, district, source, buildings, onSelectBuildin
     }
 
     panel.append(eyebrow, heading, status, summary, detail, listHeading, buildingList);
+    renderClassicPanelLinks(panel, commands, onAction, hasClassicFallback);
 }
 
 function renderActionResult(result, onAction, type, buildingId) {
@@ -78,7 +104,7 @@ function renderActionResult(result, onAction, type, buildingId) {
     }
 }
 
-function renderBuildingPanel(panel, building, source, commands, onAction, onBack) {
+function renderBuildingPanel(panel, building, source, commands, onAction, onBack, hasClassicFallback) {
     const detail = building.detail;
     const eyebrow = createElement('p', 'town-scene__panel-eyebrow', source === 'mock' ? loc('remaster_demo_data') : loc('remaster_civilization_view'));
     const back = createButton(`← ${loc('remaster_back_to_district')}`, 'back-to-district', false, onBack, 'town-scene__back');
@@ -90,6 +116,7 @@ function renderBuildingPanel(panel, building, source, commands, onAction, onBack
 
     if (!detail) {
         panel.append(createElement('div', 'town-scene__mock-notice', loc('remaster_demo_notice')));
+        renderClassicPanelLinks(panel, commands, onAction, hasClassicFallback);
         return;
     }
 
@@ -171,6 +198,7 @@ function renderBuildingPanel(panel, building, source, commands, onAction, onBack
         : loc('remaster_no_queue'));
     queue.setAttribute('aria-live', 'polite');
     panel.append(queue);
+    renderClassicPanelLinks(panel, commands, onAction, hasClassicFallback);
 }
 
 /**
@@ -181,7 +209,7 @@ function renderBuildingPanel(panel, building, source, commands, onAction, onBack
  * @param {HTMLElement} panel
  * @param {import('../adapters/town-scene-contracts.js').TownDistrict} district
  * @param {'mock'|'engine'} source
- * @param {{ buildings?: import('../adapters/town-scene-contracts.js').TownVisualBuilding[], selectedBuilding?: import('../adapters/town-scene-contracts.js').TownVisualBuilding|null, commands?: object, onSelectBuilding?: (id: string) => void, onAction?: (event: object) => void, onBack?: () => void }} [options]
+ * @param {{ buildings?: import('../adapters/town-scene-contracts.js').TownVisualBuilding[], buildingCoverage?: { fallback: string|null }[], selectedBuilding?: import('../adapters/town-scene-contracts.js').TownVisualBuilding|null, commands?: object, onSelectBuilding?: (id: string) => void, onAction?: (event: object) => void, onBack?: () => void }} [options]
  */
 export function renderTownPanel(panel, district, source, options = {}) {
     const focusKey = getFocusedControl(panel);
@@ -189,12 +217,13 @@ export function renderTownPanel(panel, district, source, options = {}) {
     const buildings = (options.buildings || []).filter((building) => building.unlocked || building.count > 0);
     const onSelectBuilding = options.onSelectBuilding || (() => {});
     const onAction = options.onAction || (() => {});
+    const hasClassicFallback = (options.buildingCoverage || []).some((entry) => entry.fallback === 'classic-city');
 
     if (options.selectedBuilding) {
-        renderBuildingPanel(panel, options.selectedBuilding, source, options.commands, onAction, options.onBack || (() => {}));
+        renderBuildingPanel(panel, options.selectedBuilding, source, options.commands, onAction, options.onBack || (() => {}), hasClassicFallback);
     }
     else {
-        renderDistrictPanel(panel, district, source, buildings, onSelectBuilding);
+        renderDistrictPanel(panel, district, source, buildings, onSelectBuilding, options.commands, onAction, hasClassicFallback);
     }
     restoreFocusedControl(panel, focusKey);
 }

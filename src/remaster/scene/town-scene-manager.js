@@ -9,7 +9,8 @@ const snapshotIntervalMs = 1000;
  * @property {boolean} enabled Feature flag persistido por el juego.
  * @property {'scene'|'classic'} view Vista solicitada por la persona jugadora.
  * @property {() => import('../adapters/town-scene-contracts.js').TownSnapshot} readSnapshot Lector de sólo lectura del motor.
- * @property {{ build?: Function, setPower?: Function, setWorkers?: Function }} [commands] Commands injected by the game integrator.
+ * @property {{ build?: Function, setPower?: Function, setWorkers?: Function, openClassicPanel?: Function }} [commands] Commands injected by the game integrator.
+ * @property {'early-settlement'|'civilization'} [presentationMode] Fase visual sin reglas propias.
  * @property {(view: 'scene'|'classic') => void} onViewChange Solicita el cambio al integrador; no escribe estado directamente.
  */
 
@@ -34,6 +35,7 @@ class TownSceneManager {
         this.readSnapshot = options.readSnapshot;
         this.onViewChange = options.onViewChange;
         this.commands = options.commands || null;
+        this.presentationMode = options.presentationMode === 'early-settlement' ? 'early-settlement' : 'civilization';
     }
 
     mount(view) {
@@ -91,6 +93,7 @@ class TownSceneManager {
                 this.scene = new TownScene(this.sceneHost, {
                     snapshot: this.initialSnapshot || this.readSnapshot(),
                     commands: this.commands,
+                    presentationMode: this.presentationMode,
                     onAction: (event) => this.handleSceneAction(event)
                 });
                 this.scene.mount();
@@ -98,6 +101,7 @@ class TownSceneManager {
             }
             else {
                 this.scene.setCommands(this.commands, (event) => this.handleSceneAction(event));
+                this.scene.setPresentationMode(this.presentationMode);
             }
             this.scene.setMotionState({ hidden: document.hidden });
             this.startUpdates();

@@ -24,7 +24,7 @@ PhaseSceneRouter
   Evolution / SentienceTransition / EarlySettlement / Civilization / Fallback
        │
        ├─ escenas estáticas de presentación original
-       └─ CivilizationTownScene → TownScene existente + GameActionBridge
+       └─ EarlySettlementScene / CivilizationTownScene → TownScene + GameActionBridge
 ```
 
 ## Clasificación de fase
@@ -47,7 +47,7 @@ selección de semilla y Big Bang no se fuerzan hacia un mapa genérico.
 
 ## Contratos inmutables
 
-`src/remaster/adapters/phase-scene-contracts.js` define la frontera v1:
+`src/remaster/adapters/phase-scene-contracts.js` define la frontera v3:
 
 | Snapshot | Contenido | Fuente |
 | --- | --- | --- |
@@ -56,7 +56,7 @@ selección de semilla y Big Bang no se fuerzan hacia un mapa genérico.
 | `RaceSnapshot` | id, nombre localizado, grupo, universo y semilla | `global.race` y `races` a través del puente |
 | `EnvironmentSnapshot` | bioma, rasgos, estación, clima, temperatura, viento y día codificados | `city`/calendario existente |
 | `SettlementSnapshot` | población y estructuras ya construidas | recursos y `city` existentes |
-| `CivilizationSnapshot` | `TownSnapshot` v3 cuando corresponde | adaptador de ciudad existente |
+| `CivilizationSnapshot` | `TownSnapshot` v5 desde asentamiento inicial hasta Civilización | adaptador de ciudad existente |
 
 `createGamePhaseSnapshot()` recibe un estado como argumento y un
 `PhaseEngineReader`. Los módulos bajo `src/remaster/` no importan `global`; el
@@ -65,12 +65,10 @@ selección de semilla y Big Bang no se fuerzan hacia un mapa genérico.
 
 ## Escenas y ciclo de vida
 
-- `EvolutionScene`, `SentienceTransitionScene` y `EarlySettlementScene` son
-  tarjetas SVG/CSS originales de sólo lectura durante este checkpoint. Su
-  selector permite volver de inmediato a la vista clásica.
-- `CivilizationTownScene` envuelve el `TownSceneManager` existente, incluido su
-  muestreo de un segundo, control de visibilidad, reduced motion y puente de
-  acciones original.
+- `EvolutionScene` y `SentienceTransitionScene` son tarjetas SVG/CSS originales
+  de sólo lectura. `EarlySettlementScene` y `CivilizationTownScene` envuelven
+  el mismo `TownSceneManager`: el primero no muestra una ciudad preconstruida y
+  ambos reciben las acciones originales.
 - `UnsupportedPhaseScene` es intencionalmente vacío: no crea raíz, listener ni
   temporizador. La interfaz clásica sigue siendo la única UI para esa etapa.
 - `PhaseSceneRouter` destruye la escena saliente antes de montar una nueva. Los

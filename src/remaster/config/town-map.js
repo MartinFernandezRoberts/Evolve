@@ -88,6 +88,12 @@ export function createMockTownSnapshot(scenario = 'intermediate') {
             const unlocked = option.unlocked ? option.unlocked.includes(building.id) : building.unlocked;
             return { ...building, label: loc(mockBuildingTitleKeys[building.id]), count, unlocked, locked: !unlocked };
         }),
+        buildingCoverage: mockVisualBuildings.map((building) => ({
+            id: building.id,
+            represented: true,
+            panel: 'graphical',
+            fallback: null
+        })),
         context: {
             species: { ...option.species },
             biome: { id: 'grassland', label: loc('biome_grassland_name') },

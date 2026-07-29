@@ -51,14 +51,14 @@ export function createTownBackdrop() {
             <path d="m56 111 62-63 42 48-39-9-28 47zM1134 78l43-58 46 46-39-7-22 44zM1318 116l78-65 53 65-69-18-34 42z" />
         </g>
         <g class="town-scene__paths">
-            <path d="M330 250C472 258 485 349 620 385c87 23 103 25 171 38 124 22 176-23 245-82 69-59 87-77 151-107" />
-            <path d="M790 425c-105-32-177-94-247-140" />
-            <path d="M790 425c-24-107-42-154-35-234" />
-            <path d="M788 427c-119 54-244 75-430 108" />
-            <path d="M790 426c77 82 80 139 76 232" />
-            <path d="M789 427c129 46 211 107 376 185" />
-            <path d="M789 426c129 57 182 68 260 78" />
-            <path d="M791 426c-38 135-92 203-181 276" />
+            <path class="town-scene__path town-scene__path--forest-quarry" d="M330 250C472 258 485 349 620 385c87 23 103 25 171 38 124 22 176-23 245-82 69-59 87-77 151-107" />
+            <path class="town-scene__path town-scene__path--center-housing" d="M790 425c-105-32-177-94-247-140" />
+            <path class="town-scene__path town-scene__path--center-government" d="M790 425c-24-107-42-154-35-234" />
+            <path class="town-scene__path town-scene__path--center-agriculture" d="M788 427c-119 54-244 75-430 108" />
+            <path class="town-scene__path town-scene__path--center-religion" d="M790 426c77 82 80 139 76 232" />
+            <path class="town-scene__path town-scene__path--center-industry" d="M789 427c129 46 211 107 376 185" />
+            <path class="town-scene__path town-scene__path--center-science" d="M789 426c129 57 182 68 260 78" />
+            <path class="town-scene__path town-scene__path--center-military" d="M791 426c-38 135-92 203-181 276" />
         </g>
         <g class="town-scene__kenney-roads" aria-hidden="true">
             <image href="${KenneyTownAssets.crossroad}" x="722" y="360" width="137" height="98" />

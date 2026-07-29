@@ -19,6 +19,7 @@ import { bioseed } from './resets.js';
 import { loadTab, tabLabel } from './index.js';
 import { createGameTownSnapshot } from './remaster/adapters/game-town-adapter.js';
 import { createGameActionBridge } from './remaster/adapters/game-action-bridge.js';
+import { createTownBuildingCoverage } from './remaster/adapters/building-coverage.js';
 import { createGamePhaseSnapshot } from './remaster/adapters/game-phase-adapter.js';
 import { createEvolutionCoverageMatrix } from './remaster/adapters/evolution-coverage.js';
 import { getBuildingVisualDefinition } from './remaster/config/building-visual-registry.js';
@@ -6235,9 +6236,27 @@ export function setVisualCityWorkers(id, job, amount){
 }
 
 /** Devuelve el control a las pestañas clásicas sin mutar datos de partida. */
-export function openVisualClassicPanel(){
+export function openVisualClassicPanel(panel = 'city'){
     setRemasterView('classic');
-    drawCity();
+    const targets = {
+        city: { civTabs: 1, subTab: 'spaceTabs', subTabValue: 0, load: 'mTabCivil' },
+        research: { civTabs: 3, subTab: 'resTabs', subTabValue: 0, load: 'mTabResearch' },
+        government: { civTabs: 2, subTab: 'govTabs', subTabValue: 0, load: 'mTabCivic' },
+        military: { civTabs: 2, subTab: 'govTabs', subTabValue: 3, load: 'mTabCivic' },
+        trade: { civTabs: 4, subTab: 'marketTabs', subTabValue: 0, load: 'mTabResource' },
+        settings: { civTabs: 7, load: 7 }
+    };
+    const target = targets[panel] || targets.city;
+    global.settings.civTabs = target.civTabs;
+    if (target.subTab) {
+        global.settings[target.subTab] = target.subTabValue;
+    }
+    if (target.civTabs !== 1) {
+        destroyRemasterPhaseScene();
+    }
+    if (!global.settings.tabLoad){
+        loadTab(target.load);
+    }
     return { success: true };
 }
 
@@ -6326,6 +6345,11 @@ function getTownBuiltBuildingState(id){
         label: typeof label === 'string' ? label : id,
         state: global.city[id]?.count > 0 ? 'built' : 'available'
     };
+}
+
+/** Garantiza un fallback explícito para todas las definiciones de actions.city. */
+function getTownBuildingCoverage(){
+    return createTownBuildingCoverage(Object.keys(actions.city), (id) => Boolean(getBuildingVisualDefinition(id)));
 }
 
 // Las pocas acciones visuales cuyo título original se resolvió al arrancar
@@ -6443,7 +6467,8 @@ const cityVisualStateReader = Object.freeze({
     readTechnology: getTownTechnologyState,
     readDistrict: getTownDistrictState,
     readEnvironment: getTownEnvironmentState,
-    readContext: getTownContextState
+    readContext: getTownContextState,
+    readBuildingCoverage: getTownBuildingCoverage
 });
 
 /**

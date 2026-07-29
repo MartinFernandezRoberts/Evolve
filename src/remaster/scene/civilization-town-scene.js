@@ -13,11 +13,11 @@ export class CivilizationTownScene {
     /** @param {object} options */
     sync(options) {
         this.options = options;
-        syncTownScene(options);
+        syncTownScene({ ...options, presentationMode: 'civilization' });
     }
 
     mount() {
-        syncTownScene(this.options);
+        syncTownScene({ ...this.options, presentationMode: 'civilization' });
     }
 
     destroy() {

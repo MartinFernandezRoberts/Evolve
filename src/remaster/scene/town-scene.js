@@ -34,7 +34,7 @@ function clamp(value, min, max) {
 export class TownScene {
     /**
      * @param {HTMLElement} root Elemento donde se monta la escena.
-     * @param {{ snapshot: import('../adapters/town-scene-contracts.js').TownSnapshot, commands?: object, onSelectionChange?: (district: import('../adapters/town-scene-contracts.js').TownDistrict) => void, onAction?: (event: object) => void }} options
+     * @param {{ snapshot: import('../adapters/town-scene-contracts.js').TownSnapshot, commands?: object, presentationMode?: 'early-settlement'|'civilization', onSelectionChange?: (district: import('../adapters/town-scene-contracts.js').TownDistrict) => void, onAction?: (event: object) => void }} options
      */
     constructor(root, options) {
         if (!root) {
@@ -49,6 +49,7 @@ export class TownScene {
         this.onSelectionChange = options.onSelectionChange || (() => {});
         this.commands = options.commands || null;
         this.onAction = options.onAction || (() => {});
+        this.presentationMode = options.presentationMode === 'early-settlement' ? 'early-settlement' : 'civilization';
         this.nodes = [];
         this.nodeById = new Map();
         this.resourceNodes = new Map();
@@ -122,6 +123,7 @@ export class TownScene {
         this.svg = this.root.querySelector('.town-scene__map');
         this.world = this.root.querySelector('.town-scene__world');
         this.sceneElement = this.root.querySelector('.town-scene');
+        this.sceneElement.dataset.townSettlement = this.presentationMode;
         this.panel = this.root.querySelector('.town-scene__panel');
         this.tooltip = this.root.querySelector('.town-scene__tooltip');
         this.zoomLabel = this.root.querySelector('.town-scene__zoom-label');
@@ -171,6 +173,19 @@ export class TownScene {
             this.renderStructure();
         }
         this.updateSnapshotData(structureChanged);
+    }
+
+    /** Actualiza sólo la composición de asentamiento; nunca altera el DTO. */
+    setPresentationMode(mode) {
+        const nextMode = mode === 'early-settlement' ? 'early-settlement' : 'civilization';
+        if (nextMode === this.presentationMode) {
+            return;
+        }
+        this.presentationMode = nextMode;
+        if (this.sceneElement) {
+            this.sceneElement.dataset.townSettlement = nextMode;
+            this.updateSnapshotData(true);
+        }
     }
 
     getStructureKey(snapshot) {
@@ -224,12 +239,16 @@ export class TownScene {
         const progression = resolveSettlementVisualProgression(this.snapshot);
         const visualProfile = this.snapshot.context.visual || resolveTownVisualProfile(this.snapshot);
         this.visualProfile = visualProfile;
+        this.sceneElement.dataset.townSettlement = this.presentationMode === 'early-settlement' && progression.builtCount > 0
+            ? 'civilization'
+            : this.presentationMode;
         this.sceneElement.dataset.townGrowth = progression.id;
         this.sceneElement.dataset.townArchitecture = visualProfile.race.architecture;
         this.sceneElement.dataset.townBiome = visualProfile.biome.art;
         this.sceneElement.dataset.townEra = visualProfile.technologyEra.id;
         this.sceneElement.dataset.townCulture = visualProfile.race.culture;
         this.sceneElement.dataset.townVariant = visualProfile.race.variant || '';
+        this.syncSettlementDistrictClasses(progression);
         this.environmentLayer.sync(visualProfile);
         this.lifeLayer.sync(this.snapshot, visualProfile);
         this.applyMotionState();
@@ -242,6 +261,23 @@ export class TownScene {
     setCommands(commands, onAction) {
         this.commands = commands || null;
         this.onAction = onAction || (() => {});
+    }
+
+    /** Revela caminos y hitos de cada distrito sólo cuando el motor confirmó estructuras. */
+    syncSettlementDistrictClasses(progression) {
+        if (!this.sceneElement) {
+            return;
+        }
+        const activeDistricts = new Set(this.snapshot.districts
+            .filter((district) => district.buildings.some((building) => building.count > 0))
+            .map((district) => district.id));
+        this.snapshot.visualBuildings
+            .filter((building) => building.count > 0)
+            .forEach((building) => activeDistricts.add(building.district));
+        this.snapshot.districts.forEach((district) => {
+            this.sceneElement.classList.toggle(`has-district-${district.id}`, activeDistricts.has(district.id));
+        });
+        this.sceneElement.classList.toggle('has-settlement-paths', progression.builtCount > 0);
     }
 
     /** Refreshes only localizable chrome; state and camera stay untouched. */
@@ -347,13 +383,14 @@ export class TownScene {
             return;
         }
         const selectedBuilding = this.snapshot.visualBuildings.find((building) => building.id === this.selectedBuildingId) || null;
-        const panelKey = JSON.stringify({ source: this.snapshot.source, district, selectedBuilding });
+        const panelKey = JSON.stringify({ source: this.snapshot.source, district, selectedBuilding, buildingCoverage: this.snapshot.buildingCoverage });
         if (force || panelKey !== this.panelKey) {
             this.panelKey = panelKey;
             renderTownPanel(this.panel, district, this.snapshot.source, {
                 buildings: this.snapshot.visualBuildings.filter((building) => building.district === district.id),
                 selectedBuilding,
                 commands: this.commands,
+                buildingCoverage: this.snapshot.buildingCoverage,
                 onSelectBuilding: (id) => this.selectBuilding(id),
                 onAction: (event) => this.handleBuildingAction(event),
                 onBack: () => this.selectDistrict(district.id, false)

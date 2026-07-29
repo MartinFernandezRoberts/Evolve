@@ -4,7 +4,7 @@
 
 `TownSnapshot` es el límite de sólo lectura entre Evolve y la escena visual de
 Civilización. Se define con JSDoc en
-`src/remaster/adapters/town-scene-contracts.js`; su versión actual es `4`.
+`src/remaster/adapters/town-scene-contracts.js`; su versión actual es `5`.
 `TownScene` y sus componentes no importan ni acceden a `global`.
 
 El único productor de juego es
@@ -24,6 +24,7 @@ producción, requisitos, asequibilidad ni escrituras.
 | `resources` | Recursos visibles en el orden original: identificador, nombre, monograma propio, tooltip, cantidades originales, formato original, tendencia, aviso, desbloqueo y comercio cuando existe. | Barra dinámica completa y recursos requeridos por el edificio seleccionado. |
 | `districts` | Diez distritos con posición y arte SVG propios, contador y edificios agrupados. | Nodos, marcas y panel lateral. |
 | `visualBuildings` | Edificios reales del registro con nombre localizado, cantidad, actividad, bloqueo, coste siguiente, cola, energía, empleo y asequibilidad originales. | Edificio SVG, parcela disponible, estado, contador y panel. |
+| `buildingCoverage` | Cobertura declarativa de cada id real de `actions.city`: panel gráfico o fallback `classic-city`. | Garantizar acceso a todo edificio aunque no tenga arte propio. |
 | `context.species` | Id y nombre de especie. | Temas y paneles posteriores. |
 | `context.biome` | Id y nombre del bioma. | Tema ambiental posterior. |
 | `context.planet` | Planeta de origen mostrado por la raza. | Contexto de escena posterior. |
@@ -63,6 +64,9 @@ en [`RACE_VISUAL_PROFILES.md`](RACE_VISUAL_PROFILES.md).
 adaptador recibe desde la integración los resultados de las comprobaciones y
 renderizadores originales para `unlocked`, `affordable`, nombre, costes,
 efecto, energía, empleo y cola; no vuelve a expresar esas reglas en la escena.
+Las claves que no están en ese registro siguen declaradas en
+`buildingCoverage` con `classic-city`, y el panel lateral las deriva a la
+tarjeta clásica original en lugar de ocultar una acción jugable.
 
 ## Frecuencia y actualización
 

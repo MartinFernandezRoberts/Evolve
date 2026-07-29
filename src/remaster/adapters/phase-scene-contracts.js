@@ -4,7 +4,7 @@
  * motor.
  */
 
-export const PHASE_SCENE_CONTRACT_VERSION = 2;
+export const PHASE_SCENE_CONTRACT_VERSION = 3;
 
 /**
  * @typedef {'evolution'|'sentience-transition'|'early-settlement'|'civilization'|'unsupported'} RemasterPhaseKind
@@ -97,7 +97,7 @@ export const PHASE_SCENE_CONTRACT_VERSION = 2;
 
 /**
  * @typedef {Object} CivilizationSnapshot
- * @property {import('./town-scene-contracts.js').TownSnapshot|null} town TownSnapshot existente cuando la fase es Civilización.
+ * @property {import('./town-scene-contracts.js').TownSnapshot|null} town TownSnapshot existente desde el asentamiento inicial hasta Civilización.
  */
 
 /**
@@ -109,7 +109,7 @@ export const PHASE_SCENE_CONTRACT_VERSION = 2;
  * @property {RaceSnapshot} race Contexto de raza/especie.
  * @property {EnvironmentSnapshot} environment Contexto planetario.
  * @property {SettlementSnapshot} settlement Estado mínimo del asentamiento.
- * @property {CivilizationSnapshot} civilization Escena de ciudad existente cuando corresponde.
+ * @property {CivilizationSnapshot} civilization TownSnapshot reutilizable cuando la fase lo admite.
  */
 
 /**

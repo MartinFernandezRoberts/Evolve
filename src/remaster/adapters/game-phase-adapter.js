@@ -148,7 +148,7 @@ function getSettlement(gameState, speciesId) {
 export function createGamePhaseSnapshot(gameState, reader = {}) {
     const phase = resolvePhase(reader, gameState);
     const race = getRace(gameState, reader);
-    const civilizationTown = phase.kind === 'civilization' && typeof reader.readCivilization === 'function'
+    const civilizationTown = ['early-settlement', 'civilization'].includes(phase.kind) && typeof reader.readCivilization === 'function'
         ? reader.readCivilization(gameState)
         : null;
 

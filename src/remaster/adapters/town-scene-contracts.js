@@ -6,7 +6,7 @@
  * contrato desde una entrada de sólo lectura sin cambiar TownScene.
  */
 
-export const TOWN_SCENE_CONTRACT_VERSION = 4;
+export const TOWN_SCENE_CONTRACT_VERSION = 5;
 
 /**
  * @typedef {'center'|'housing'|'agriculture'|'forest'|'quarry'|'science'|'religion'|'industry'|'government'|'military'} TownDistrictId
@@ -159,6 +159,7 @@ export const TOWN_SCENE_CONTRACT_VERSION = 4;
  * @property {TownResource[]} resources Datos resumidos de sólo lectura.
  * @property {TownDistrict[]} districts Distritos renderizables.
  * @property {TownVisualBuilding[]} visualBuildings Edificios reales admitidos por BuildingVisualRegistry.
+ * @property {{ id: string, represented: boolean, panel: 'graphical'|'classic-city', fallback: 'classic-city'|null }[]} buildingCoverage Cobertura de todas las definiciones de ciudad conocidas por el motor.
  * @property {TownSnapshotContext} context Contexto de juego sólo de lectura.
  */
 
@@ -177,6 +178,7 @@ export function isTownSceneSnapshot(snapshot) {
         Array.isArray(snapshot.resources) &&
         Array.isArray(snapshot.districts) &&
         Array.isArray(snapshot.visualBuildings) &&
+        Array.isArray(snapshot.buildingCoverage) &&
         snapshot.context &&
         typeof snapshot.context === 'object' &&
         snapshot.context.visual &&

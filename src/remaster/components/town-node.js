@@ -33,7 +33,7 @@ export function createTownNode(district, handlers) {
     node.innerHTML = `
         <title>${escapeMarkup(district.label)}</title>
         <ellipse class="town-node__focus" cx="0" cy="24" rx="100" ry="58" />
-        <g filter="url(#town-shadow)">${createKenneyDistrictArt(district)}</g>
+        <g class="town-node__landmark" filter="url(#town-shadow)">${createKenneyDistrictArt(district)}</g>
         <g class="town-node__building-layer" data-town-building-layer></g>
         <g class="town-node__marker" transform="translate(58 -38)">
             <circle r="18" fill="${district.accent}" />
@@ -83,4 +83,5 @@ export function updateTownNode(node, district) {
         marker.textContent = String(district.marker);
     }
     node.setAttribute('aria-label', `${district.label}. ${district.status}`);
+    node.classList.toggle('has-built-structure', district.buildings.some((building) => building.count > 0));
 }

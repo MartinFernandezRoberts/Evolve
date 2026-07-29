@@ -2,7 +2,7 @@
 
 `config/visual-progression.js` resuelve una capa de lectura para el diorama a partir de `TownSnapshot` inmutable. No añade estado a partidas, no escribe en el motor y no calcula costes, producción, asequibilidad ni desbloqueos.
 
-Los rangos `outpost`, `village`, `town`, `industrial` y `electrified` usan solamente población publicada por el snapshot y señales de tecnologías reales (`agriculture`, `steel`, `electricity`, `electronics`, `fission`). Los valores de población son umbrales de composición configurables, no reglas de juego. Un cambio de edificios ya construido/desbloqueado activa las animaciones breves existentes: el renderer conserva el estado anterior por ID y no crea un sprite por cada unidad.
+Las etapas `wilderness`, `camp`, `first-homes`, `frontier`, `village`, `town`, `industrial`, `electrified` y `advanced` usan edificios y distritos ya confirmados por el snapshot. Las eras avanzadas proceden exclusivamente de la era ya publicada por `actions.tech`; no hay un reloj ni una tabla paralela de tecnologías. Un cambio `count: 0 -> 1` activa las animaciones breves existentes: el renderer conserva el estado anterior por ID y no crea un sprite por cada unidad. El detalle completo de Sentience a Civilización está en [SETTLEMENT_GROWTH.md](SETTLEMENT_GROWTH.md).
 
 La densidad se expresa mediante un nivel visual de hasta tres anexos, badge de cantidad y variación de distrito. Carreteras y luz cambian sólo después de que el snapshot informe la población/tecnología correspondiente. Especies, bioma, estación, clima y rasgos planetarios continúan pasando por las capas ambiental y de habitantes existentes, sin simular población individual.
 

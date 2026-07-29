@@ -198,6 +198,7 @@ function getVisualBuildings(city, engineReader) {
  * @property {(id: string, count: number, buildings: object[]) => object} [readDistrict]
  * @property {(city: object, calendar: object) => object} [readEnvironment]
  * @property {(gameState: object) => object} [readContext]
+ * @property {() => { id: string, represented: boolean, panel: 'graphical'|'classic-city', fallback: 'classic-city'|null }[]} [readBuildingCoverage]
  */
 
 /**
@@ -224,6 +225,7 @@ export function createGameTownSnapshot(gameState, engineReader = {}) {
     const resources = getResources(gameState, engineReader);
     const buildings = getAllBuildings(gameState, engineReader);
     const visualBuildings = getVisualBuildings(city, engineReader);
+    const reportedBuildingCoverage = engineReader.readBuildingCoverage?.();
 
     const snapshot = {
         contractVersion: TOWN_SCENE_CONTRACT_VERSION,
@@ -233,6 +235,14 @@ export function createGameTownSnapshot(gameState, engineReader = {}) {
         resources,
         districts: TOWN_DISTRICT_LAYOUT.map((layout) => makeDistrict(layout, city, engineReader)),
         visualBuildings,
+        buildingCoverage: Array.isArray(reportedBuildingCoverage)
+            ? reportedBuildingCoverage.map((entry) => ({
+                id: typeof entry.id === 'string' ? entry.id : '',
+                represented: entry.represented === true,
+                panel: entry.panel === 'graphical' ? 'graphical' : 'classic-city',
+                fallback: entry.fallback === 'classic-city' ? 'classic-city' : null
+            })).filter((entry) => entry.id)
+            : [],
         context: {
             species: {
                 id: speciesId,

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { assertProductionBundleHasNoMocks } from '../../buildRemasterValidation.js';
 import { createGameActionBridge } from '../../src/remaster/adapters/game-action-bridge.js';
+import { createTownBuildingCoverage, hasCompleteTownBuildingCoverage } from '../../src/remaster/adapters/building-coverage.js';
 import { createEvolutionCoverageMatrix, hasCompleteEvolutionCoverage } from '../../src/remaster/adapters/evolution-coverage.js';
 import { createGamePhaseSnapshot } from '../../src/remaster/adapters/game-phase-adapter.js';
 import { captureTownActionParityState, captureTownSaveParityState, compareTownActionParity } from '../../src/remaster/adapters/town-action-parity-harness.js';
@@ -87,14 +88,19 @@ function testActionBridgeOnlyDelegates() {
         executeEvolutionAction: (id) => {
             calls.push(['evolution', id]);
             return { success: true };
+        },
+        openClassicPanel: (panel) => {
+            calls.push(['classic', panel]);
+            return { success: true };
         }
     });
 
     assert.deepEqual(bridge.build('farm', 5), { success: true, built: 5 });
     assert.deepEqual(bridge.setPower('coal_power', false), { success: true });
     assert.deepEqual(bridge.executeEvolutionAction('membrane'), { success: true });
+    assert.deepEqual(bridge.openClassicPanel('research'), { success: true });
     assert.deepEqual(bridge.setWorkers('farmer', 'farmer', 1), { success: false, reason: 'unsupported' });
-    assert.deepEqual(calls, [['build', 'farm', 5], ['power', 'coal_power', false], ['evolution', 'membrane']]);
+    assert.deepEqual(calls, [['build', 'farm', 5], ['power', 'coal_power', false], ['evolution', 'membrane'], ['classic', 'research']]);
     assert.equal(Object.isFrozen(bridge), true);
 }
 
@@ -150,11 +156,27 @@ function visualSnapshot(population, technologies = [], visualBuildings = []) {
 }
 
 function testVisualProgressionUsesOnlySnapshotSignals() {
-    assert.equal(resolveSettlementVisualProgression(visualSnapshot(0)).id, 'outpost');
-    assert.equal(resolveSettlementVisualProgression(visualSnapshot(12)).id, 'village');
-    assert.equal(resolveSettlementVisualProgression(visualSnapshot(61)).id, 'town');
-    assert.equal(resolveSettlementVisualProgression(visualSnapshot(1, [{ id: 'electricity', level: 1 }])).id, 'industrial');
-    assert.equal(resolveSettlementVisualProgression(visualSnapshot(1, [{ id: 'fission', level: 1 }], [{ id: 'fission_power', district: 'industry', count: 1 }])).id, 'electrified');
+    assert.equal(resolveSettlementVisualProgression(visualSnapshot(0)).id, 'wilderness');
+    assert.equal(resolveSettlementVisualProgression(visualSnapshot(1)).id, 'camp');
+    assert.equal(resolveSettlementVisualProgression(visualSnapshot(1, [], [{ id: 'basic_housing', district: 'housing', count: 1 }])).id, 'first-homes');
+    assert.equal(resolveSettlementVisualProgression(visualSnapshot(1, [], [{ id: 'farm', district: 'agriculture', count: 1 }])).id, 'frontier');
+    assert.equal(resolveSettlementVisualProgression(visualSnapshot(1, [], [
+        { id: 'farm', district: 'agriculture', count: 1 },
+        { id: 'lumber_yard', district: 'forest', count: 1 },
+        { id: 'library', district: 'science', count: 1 }
+    ])).id, 'village');
+    assert.equal(resolveSettlementVisualProgression(visualSnapshot(1, [{ id: 'steel', era: 'industrialized', level: 1 }])).id, 'industrial');
+    assert.equal(resolveSettlementVisualProgression(visualSnapshot(1, [], [{ id: 'coal_power', district: 'industry', count: 1 }])).id, 'electrified');
+    assert.equal(resolveSettlementVisualProgression(visualSnapshot(1, [{ id: 'quantum', era: 'advanced', level: 1 }])).id, 'advanced');
+}
+
+function testTownBuildingCoverageProvidesClassicFallbacks() {
+    const coverage = createTownBuildingCoverage(['farm', 'future_city', 'farm'], (id) => id === 'farm');
+    assert.deepEqual(coverage, [
+        { id: 'farm', represented: true, panel: 'graphical', fallback: null },
+        { id: 'future_city', represented: false, panel: 'classic-city', fallback: 'classic-city' }
+    ]);
+    assert.equal(hasCompleteTownBuildingCoverage(coverage), true);
 }
 
 function testVisualScenarioHelpers() {
@@ -219,7 +241,7 @@ function testPhaseSnapshotsAreFrozenAndDoNotRequireGlobal() {
         resource: { octigoran: { amount: 4, max: 10 } },
         city: { biome: 'oceanic', ptrait: ['stormy'], calendar: { season: 1, weather: 2, temp: 1, wind: 0, day: 3 }, farm: { count: 1 } }
     };
-    const town = Object.freeze({ contractVersion: 4, source: 'engine' });
+    const town = Object.freeze({ contractVersion: 5, source: 'engine' });
     const snapshot = createGamePhaseSnapshot(state, {
         readPhase: () => ({ kind: 'civilization' }),
         readEvolution: () => ({
@@ -264,6 +286,16 @@ function testPhaseSnapshotsAreFrozenAndDoNotRequireGlobal() {
     assert.equal(Object.isFrozen(snapshot.settlement.buildings), true);
 }
 
+function testEarlySettlementReceivesTheSameReadOnlyTownSnapshot() {
+    const town = Object.freeze({ contractVersion: 5, source: 'engine' });
+    const snapshot = createGamePhaseSnapshot({ race: { species: 'human' }, city: {}, resource: {} }, {
+        readPhase: () => ({ kind: 'early-settlement' }),
+        readCivilization: () => town
+    });
+    assert.equal(snapshot.phase.kind, 'early-settlement');
+    assert.equal(snapshot.civilization.town, town);
+}
+
 function placeholders(value) {
     return [...String(value).matchAll(/%\d+(?!\d)/g)].map((match) => match[0]).sort();
 }
@@ -291,10 +323,12 @@ testEvolutionCoverageMatrixProvidesAnExplicitFallback();
 testParityReducers();
 testMockImportBuildGuard();
 testVisualProgressionUsesOnlySnapshotSignals();
+testTownBuildingCoverageProvidesClassicFallbacks();
 testVisualScenarioHelpers();
 testVisualProfileRegistriesCoverInjectedEngineDefinitions();
 testCuratedAssetsUseLocalBuildPaths();
 testPhaseRouterUsesOnlyResolvedSignals();
 testPhaseSnapshotsAreFrozenAndDoNotRequireGlobal();
+testEarlySettlementReceivesTheSameReadOnlyTownSnapshot();
 testRemasterLocaleParity();
 console.log('remaster integration contract tests passed');

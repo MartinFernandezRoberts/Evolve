@@ -1,45 +1,80 @@
 /**
- * Umbrales exclusivamente de composición. No se copian costes, producción ni
- * desbloqueos: TownSnapshot ya comunica qué edificios y tecnologías existen.
- * Se concentran aquí para poder ajustar la lectura del diorama sin tocar el
- * motor ni guardar estado visual en una partida.
+ * Progresión de composición del asentamiento. Sólo observa hechos que el
+ * TownSnapshot ya publicó: estructuras existentes, distritos y eras de las
+ * tecnologías originales. No añade costes, requisitos ni progreso guardado.
  */
-export const SETTLEMENT_VISUAL_THRESHOLDS = Object.freeze([
-    { id: 'outpost', minimumPopulation: 0 },
-    { id: 'village', minimumPopulation: 12 },
-    { id: 'town', minimumPopulation: 60 },
-    { id: 'industrial', minimumPopulation: 180 },
-    { id: 'electrified', minimumPopulation: 420 }
+
+export const SETTLEMENT_VISUAL_STAGES = Object.freeze([
+    'wilderness',
+    'camp',
+    'first-homes',
+    'frontier',
+    'village',
+    'town',
+    'industrial',
+    'electrified',
+    'advanced'
 ]);
 
-const technologySignals = Object.freeze({
-    village: [{ id: 'agriculture', level: 1 }],
-    town: [{ id: 'agriculture', level: 4 }, { id: 'steel', level: 1 }],
-    industrial: [{ id: 'electricity', level: 1 }, { id: 'electronics', level: 1 }],
-    electrified: [{ id: 'fission', level: 1 }]
-});
+const homesteadBuildings = Object.freeze(['basic_housing', 'cottage', 'apartment', 'lodge', 'slave_pen']);
+const frontierBuildings = Object.freeze(['farm', 'lumber', 'lumber_yard', 'rock_quarry', 'mine', 'coal_mine', 'oil_well']);
+const powerBuildings = Object.freeze(['coal_power', 'oil_power', 'fission_power']);
 
-function hasTechnology(technologies, signal) {
-    return technologies.some((technology) => technology.id === signal.id && technology.level >= signal.level);
+function hasBuiltBuilding(buildings, ids) {
+    return buildings.some((building) => ids.includes(building.id) && building.count > 0);
+}
+
+function getTechnologyEras(technologies) {
+    return new Set(technologies
+        .map((technology) => typeof technology?.era === 'string' ? technology.era : '')
+        .filter(Boolean));
 }
 
 /**
  * @param {import('../adapters/town-scene-contracts.js').TownSnapshot} snapshot
- * @returns {{ id: string, builtCount: number, activeDistricts: number }}
+ * @returns {{ id: string, builtCount: number, activeDistricts: number, technologyEras: string[] }}
  */
 export function resolveSettlementVisualProgression(snapshot) {
-    const population = snapshot.context.population?.amount || 0;
-    const technologies = snapshot.context.technologies || [];
-    const builtCount = snapshot.visualBuildings.reduce((total, building) => total + building.count, 0);
-    const activeDistricts = new Set(snapshot.visualBuildings.filter((building) => building.count > 0).map((building) => building.district)).size;
-    let id = builtCount > 0 ? 'outpost' : 'outpost';
+    const visualBuildings = Array.isArray(snapshot.visualBuildings) ? snapshot.visualBuildings : [];
+    const realBuildings = Array.isArray(snapshot.context?.buildings) && snapshot.context.buildings.length > 0
+        ? snapshot.context.buildings
+        : visualBuildings;
+    const technologies = Array.isArray(snapshot.context?.technologies) ? snapshot.context.technologies : [];
+    const builtBuildings = realBuildings.filter((building) => building.count > 0);
+    const builtCount = builtBuildings.reduce((total, building) => total + building.count, 0);
+    const activeDistricts = new Set((snapshot.districts || [])
+        .filter((district) => district.buildings?.some((building) => building.count > 0))
+        .map((district) => district.id)).size || new Set(visualBuildings
+        .filter((building) => building.count > 0)
+        .map((building) => building.district)).size;
+    const technologyEras = getTechnologyEras(technologies);
+    const unlockedBuildingExists = visualBuildings.some((building) => building.unlocked === true);
+    let id = 'wilderness';
 
-    SETTLEMENT_VISUAL_THRESHOLDS.slice(1).forEach((threshold) => {
-        const signalled = (technologySignals[threshold.id] || []).some((signal) => hasTechnology(technologies, signal));
-        if (population >= threshold.minimumPopulation || signalled) {
-            id = threshold.id;
-        }
-    });
+    if (unlockedBuildingExists || snapshot.context?.population?.amount > 0) {
+        id = 'camp';
+    }
+    if (hasBuiltBuilding(builtBuildings, homesteadBuildings)) {
+        id = 'first-homes';
+    }
+    if (hasBuiltBuilding(builtBuildings, frontierBuildings)) {
+        id = 'frontier';
+    }
+    if (activeDistricts >= 3) {
+        id = 'village';
+    }
+    if (activeDistricts >= 5) {
+        id = 'town';
+    }
+    if (technologyEras.has('industrialized')) {
+        id = 'industrial';
+    }
+    if (hasBuiltBuilding(builtBuildings, powerBuildings)) {
+        id = 'electrified';
+    }
+    if (technologyEras.has('advanced')) {
+        id = 'advanced';
+    }
 
-    return { id, builtCount, activeDistricts };
+    return { id, builtCount, activeDistricts, technologyEras: [...technologyEras].sort() };
 }
