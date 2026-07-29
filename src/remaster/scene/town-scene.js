@@ -1,6 +1,8 @@
 import { isTownSceneSnapshot } from '../adapters/town-scene-contracts.js';
 import { createTownBackdrop } from '../assets/town-art.js';
 import { TownBuildingLayer } from '../components/town-building-layer.js';
+import { TownEnvironmentLayer } from '../components/town-environment-layer.js';
+import { TownLifeLayer } from '../components/town-life-layer.js';
 import { createTownNode, updateTownNode, updateTownNodeSelection } from '../components/town-node.js';
 import { renderTownPanel } from '../components/town-panel.js';
 
@@ -8,6 +10,14 @@ const minimumZoom = 0.65;
 const maximumZoom = 1.8;
 const zoomStep = 0.15;
 const mapWidth = 1600;
+
+function detectLowPowerDevice() {
+    if (typeof navigator === 'undefined') {
+        return false;
+    }
+    return (typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 2)
+        || (typeof navigator.deviceMemory === 'number' && navigator.deviceMemory <= 2);
+}
 
 function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
@@ -39,6 +49,8 @@ export class TownScene {
         this.nodeById = new Map();
         this.resourceNodes = new Map();
         this.buildingLayer = new TownBuildingLayer({ onSelect: (id) => this.selectBuilding(id) });
+        this.environmentLayer = new TownEnvironmentLayer();
+        this.lifeLayer = new TownLifeLayer();
         this.structureKey = '';
         this.panelKey = '';
         this.zoom = 1;
@@ -51,6 +63,13 @@ export class TownScene {
         this.boundPointerMove = this.handlePointerMove.bind(this);
         this.boundPointerUp = this.handlePointerUp.bind(this);
         this.boundKeyDown = this.handleMapKeyDown.bind(this);
+        this.boundMotionPreferenceChange = this.handleMotionPreferenceChange.bind(this);
+        this.motion = {
+            hidden: typeof document !== 'undefined' && document.hidden,
+            lowPower: detectLowPowerDevice(),
+            reducedMotion: false
+        };
+        this.reducedMotionQuery = null;
     }
 
     mount() {
@@ -89,9 +108,21 @@ export class TownScene {
         this.resources = this.root.querySelector('.town-scene__resources');
         this.svg = this.root.querySelector('.town-scene__map');
         this.world = this.root.querySelector('.town-scene__world');
+        this.sceneElement = this.root.querySelector('.town-scene');
         this.panel = this.root.querySelector('.town-scene__panel');
         this.tooltip = this.root.querySelector('.town-scene__tooltip');
         this.zoomLabel = this.root.querySelector('.town-scene__zoom-label');
+
+        if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+            this.reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+            this.motion.reducedMotion = this.reducedMotionQuery.matches;
+            if (typeof this.reducedMotionQuery.addEventListener === 'function') {
+                this.reducedMotionQuery.addEventListener('change', this.boundMotionPreferenceChange);
+            }
+            else {
+                this.reducedMotionQuery.addListener(this.boundMotionPreferenceChange);
+            }
+        }
 
         this.renderStructure();
         this.updateSnapshotData(true);
@@ -132,6 +163,8 @@ export class TownScene {
 
     renderStructure() {
         this.structureKey = this.getStructureKey(this.snapshot);
+        this.environmentLayer.reset();
+        this.lifeLayer.reset();
         this.world.innerHTML = createTownBackdrop();
         this.nodes = [];
         this.nodeById.clear();
@@ -150,6 +183,8 @@ export class TownScene {
             this.nodes.push(node);
             this.nodeById.set(district.id, node);
         });
+        this.environmentLayer.mount(this.world);
+        this.lifeLayer.mount(this.world);
         this.renderTransform();
     }
 
@@ -166,6 +201,10 @@ export class TownScene {
             }
         });
         this.buildingLayer.sync(this.snapshot, this.nodeById);
+        const architecture = this.environmentLayer.sync(this.snapshot);
+        this.sceneElement.dataset.townArchitecture = architecture;
+        this.lifeLayer.sync(this.snapshot);
+        this.applyMotionState();
         updateTownNodeSelection(this.nodes, this.selectedId);
         this.renderSelectedPanel(forcePanel);
     }
@@ -174,6 +213,28 @@ export class TownScene {
     setCommands(commands, onAction) {
         this.commands = commands || null;
         this.onAction = onAction || (() => {});
+    }
+
+    /** El gestor propaga visibilidad sin acoplar la capa SVG al game loop. */
+    setMotionState(nextMotion) {
+        this.motion.hidden = Boolean(nextMotion.hidden);
+        this.applyMotionState();
+    }
+
+    handleMotionPreferenceChange(event) {
+        this.motion.reducedMotion = Boolean(event.matches);
+        this.applyMotionState();
+    }
+
+    applyMotionState() {
+        if (!this.sceneElement) {
+            return;
+        }
+        this.sceneElement.classList.toggle('is-life-paused', this.motion.hidden);
+        this.sceneElement.classList.toggle('is-low-power', this.motion.lowPower);
+        this.sceneElement.classList.toggle('is-reduced-motion', this.motion.reducedMotion);
+        this.environmentLayer.setMotionState(this.motion);
+        this.lifeLayer.setMotionState(this.motion);
     }
 
     syncResourceDisplay() {
@@ -378,5 +439,16 @@ export class TownScene {
         this.nodeById.clear();
         this.resourceNodes.clear();
         this.buildingLayer.destroy();
+        this.environmentLayer.destroy();
+        this.lifeLayer.destroy();
+        if (this.reducedMotionQuery) {
+            if (typeof this.reducedMotionQuery.removeEventListener === 'function') {
+                this.reducedMotionQuery.removeEventListener('change', this.boundMotionPreferenceChange);
+            }
+            else {
+                this.reducedMotionQuery.removeListener(this.boundMotionPreferenceChange);
+            }
+            this.reducedMotionQuery = null;
+        }
     }
 }

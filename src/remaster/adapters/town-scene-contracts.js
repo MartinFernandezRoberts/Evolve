@@ -99,11 +99,12 @@ export const TOWN_SCENE_CONTRACT_VERSION = 2;
 
 /**
  * @typedef {Object} TownSnapshotContext
- * @property {{ id: string, label: string }} species Especie actual.
+ * @property {{ id: string, label: string, type: string }} species Especie actual y su grupo original.
  * @property {{ id: string|null, label: string|null }} biome Bioma actual.
  * @property {string|null} planet Planeta de origen.
  * @property {number|null} season Estación codificada por el motor.
  * @property {number|null} weather Clima codificado por el motor.
+ * @property {TownVisualEnvironment} environment Datos ambientales codificados por el motor; no son simulados por la escena.
  * @property {{ amount: number, max: number, label: string }} population Recurso de población original.
  * @property {{ id: string, workers: number, max: number|null }[]} workers Empleos con trabajadores.
  * @property {TownBuilding[]} buildings Todas las estructuras urbanas construidas.
@@ -111,6 +112,16 @@ export const TOWN_SCENE_CONTRACT_VERSION = 2;
  * @property {{ available: number|null, powered: boolean|null }} energy Estado de energía original disponible.
  * @property {{ current: number|null, potential: number|null }} morale Moral original.
  * @property {{ id: string|null, label: string|null }} government Gobierno actual.
+ */
+
+/**
+ * @typedef {Object} TownVisualEnvironment
+ * @property {number|null} season EstaciÃ³n codificada por `city.calendar`.
+ * @property {number|null} weather Clima codificado por `city.calendar`.
+ * @property {number|null} temperature Temperatura codificada por `city.calendar`.
+ * @property {number|null} wind Viento codificado por `city.calendar`.
+ * @property {number|null} day DÃ­a del calendario original, si estÃ¡ disponible.
+ * @property {string[]} planetTraits Rasgos del planeta originales en `city.ptrait`.
  */
 
 /**

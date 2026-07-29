@@ -968,8 +968,398 @@
         animation: remaster-smoke 3.2s ease-in-out infinite;
     }
 
+    // Entorno y habitantes: SVG fijo, sin instancias ligadas a la población.
+    .town-environment,
+    .town-life {
+        pointer-events: none;
+    }
+
+    .town-environment__veil {
+        fill: #183d58;
+        opacity: 0;
+        transition: opacity .5s ease, fill .5s ease;
+    }
+
+    .town-environment__weather,
+    .town-environment__aquatic,
+    .town-environment__trait {
+        display: none;
+    }
+
+    .town-environment.is-weather-rain .town-environment__weather,
+    .town-environment.is-weather-snow .town-environment__weather {
+        display: inline;
+    }
+
+    .town-environment.is-weather-rain .town-environment__veil {
+        fill: #315e77;
+        opacity: .18;
+    }
+
+    .town-environment.is-weather-overcast .town-environment__veil {
+        fill: #596d72;
+        opacity: .22;
+    }
+
+    .town-environment.is-weather-clear .town-environment__veil {
+        fill: #f6d266;
+        opacity: .045;
+    }
+
+    .town-environment.is-season-spring .town-environment__veil {
+        filter: hue-rotate(8deg) saturate(1.08);
+    }
+
+    .town-environment.is-season-summer .town-environment__veil {
+        filter: hue-rotate(-10deg) saturate(1.22);
+    }
+
+    .town-environment.is-season-autumn .town-environment__veil {
+        filter: hue-rotate(-30deg) saturate(1.18);
+    }
+
+    .town-environment.is-season-winter .town-environment__veil {
+        filter: hue-rotate(148deg) saturate(.78) brightness(1.18);
+    }
+
+    .town-environment__particle {
+        fill: none;
+        stroke: #b9edf3;
+        stroke-linecap: round;
+        stroke-opacity: .73;
+        stroke-width: 4;
+        animation: remaster-rain-fall 1.25s linear infinite;
+    }
+
+    .town-environment.is-weather-snow .town-environment__veil {
+        fill: #bedce9;
+        opacity: .2;
+    }
+
+    .town-environment.is-weather-snow .town-environment__particle {
+        stroke: #efffff;
+        stroke-dasharray: 2 7;
+        stroke-width: 7;
+        animation-duration: 2.5s;
+    }
+
+    .town-environment.is-windy .town-environment__particle {
+        animation-name: remaster-wind-fall;
+    }
+
+    .town-environment.is-windy .town-environment__canal--small {
+        stroke-dasharray: 12 8;
+        animation: remaster-canal-current 2.2s linear infinite;
+    }
+
+    .town-environment__particle:nth-child(3n) {
+        animation-delay: -.45s;
+    }
+
+    .town-environment__particle:nth-child(3n + 1) {
+        animation-delay: -.8s;
+    }
+
+    .town-environment.is-aquatic .town-environment__aquatic {
+        display: inline;
+    }
+
+    .town-environment__canal {
+        fill: none;
+        stroke: #54c5c4;
+        stroke-linecap: round;
+        stroke-opacity: .78;
+        stroke-width: 22;
+        filter: drop-shadow(0 4px 0 rgba(25, 89, 100, .35));
+    }
+
+    .town-environment__canal--small {
+        stroke: #89ded2;
+        stroke-width: 12;
+    }
+
+    .town-environment__pool {
+        fill: #4bc0bd;
+        fill-opacity: .83;
+        stroke: #a3ede0;
+        stroke-width: 5;
+        animation: remaster-pool-shimmer 3.2s ease-in-out infinite;
+    }
+
+    .town-environment__pool--small {
+        animation-delay: -.9s;
+    }
+
+    .town-environment__reeds {
+        fill: none;
+        stroke: #d0db78;
+        stroke-linecap: round;
+        stroke-width: 5;
+    }
+
+    .town-environment.is-octigoran .town-environment__canal {
+        stroke: #5ecfc7;
+        stroke-width: 27;
+    }
+
+    .town-environment.is-octigoran .town-environment__pool {
+        fill: #56b9d0;
+        stroke: #b7f4db;
+    }
+
+    .town-environment.has-trait-toxic .town-environment__trait--toxic,
+    .town-environment.has-trait-magnetic .town-environment__trait--magnetic,
+    .town-environment.has-trait-permafrost .town-environment__trait--permafrost,
+    .town-environment.has-trait-stormy .town-environment__trait--stormy {
+        display: inline;
+    }
+
+    .town-environment__trait--toxic {
+        fill: none;
+        stroke: #b7db5b;
+        stroke-dasharray: 13 8;
+        stroke-linecap: round;
+        stroke-width: 13;
+        opacity: .48;
+    }
+
+    .town-environment__trait--magnetic {
+        fill: none;
+        stroke: #c776e4;
+        stroke-width: 7;
+        animation: remaster-magnetic-arc 2.8s ease-in-out infinite;
+    }
+
+    .town-environment__trait--permafrost {
+        fill: none;
+        stroke: #d7f3f5;
+        stroke-linecap: round;
+        stroke-width: 9;
+    }
+
+    .town-environment__trait--stormy {
+        fill: none;
+        stroke: #ffe071;
+        stroke-linejoin: round;
+        stroke-width: 7;
+        animation: remaster-lightning-flash 2.4s steps(2, end) infinite;
+    }
+
+    .town-life__resident,
+    .town-life__activity {
+        display: none;
+    }
+
+    .town-life__resident.is-visible,
+    .town-life__activity.is-visible {
+        display: inline;
+    }
+
+    .town-life__walker {
+        animation: remaster-life-route-a 4.7s ease-in-out infinite;
+        transform-box: fill-box;
+        transform-origin: center;
+    }
+
+    .town-life__walker--route-b {
+        animation-name: remaster-life-route-b;
+        animation-duration: 5.5s;
+    }
+
+    .town-life__walker--route-c {
+        animation-name: remaster-life-route-c;
+        animation-duration: 4.1s;
+    }
+
+    .town-life__resident:nth-child(even) .town-life__walker,
+    .town-life__activity:nth-child(even) .town-life__walker {
+        animation-delay: -1.7s;
+    }
+
+    .town-life__body,
+    .town-life__worker-body,
+    .town-life__worker-head,
+    .town-life__cloak,
+    .town-life__cart {
+        fill: #f2c57c;
+        stroke: #563f43;
+        stroke-linejoin: round;
+        stroke-width: 2;
+    }
+
+    .town-life__eye {
+        fill: #243b4a;
+    }
+
+    .town-life__tentacle,
+    .town-life__limb,
+    .town-life__tail,
+    .town-life__wing,
+    .town-life__tool,
+    .town-life__spear,
+    .town-life__lens {
+        fill: none;
+        stroke: #563f43;
+        stroke-linecap: round;
+        stroke-width: 2.5;
+    }
+
+    .town-life__tentacle {
+        stroke: #65d4cd;
+        animation: remaster-tentacle-sway 1.9s ease-in-out infinite;
+    }
+
+    .town-life__ear,
+    .town-life__beak,
+    .town-life__crest {
+        fill: #e6875e;
+        stroke: #563f43;
+        stroke-width: 2;
+    }
+
+    .town-life__parcel {
+        fill: #c58f50;
+        stroke: #654839;
+        stroke-width: 2;
+    }
+
+    .town-life__wheel {
+        fill: #52656b;
+        stroke: #314950;
+        stroke-width: 2;
+        animation: remaster-life-wheel 1.6s linear infinite;
+        transform-box: fill-box;
+        transform-origin: center;
+    }
+
+    .town-life__industrial-glow {
+        fill: #f0a04f;
+        stroke: #70433b;
+        stroke-width: 2;
+        animation: remaster-industrial-glow 1.6s ease-in-out infinite;
+    }
+
+    .town-life__smoke {
+        fill: none;
+        stroke: rgba(228, 236, 224, .7);
+        stroke-linecap: round;
+        stroke-width: 5;
+        animation: remaster-smoke 2.3s ease-in-out infinite;
+    }
+
+    .town-life[data-town-life-profile="aquatic"] .town-life__body {
+        fill: #63d2ca;
+        stroke: #356477;
+    }
+
+    .town-life[data-town-life-profile="arthropod"] .town-life__body {
+        fill: #d9994e;
+        stroke: #68463b;
+    }
+
+    .town-life[data-town-life-profile="avian"] .town-life__body {
+        fill: #f2dc78;
+        stroke: #636050;
+    }
+
+    .town-life[data-town-life-profile="reptilian"] .town-life__body {
+        fill: #88be68;
+        stroke: #3d6848;
+    }
+
+    .town-scene[data-town-architecture="aquatic"] .town-art,
+    .town-scene[data-town-architecture="aquatic"] .town-building [data-building-art] {
+        filter: saturate(1.12) hue-rotate(15deg);
+    }
+
+    .town-scene[data-town-architecture="mammalian"] .town-building__wall,
+    .town-scene[data-town-architecture="mammalian"] .town-art--homes {
+        filter: saturate(1.13) sepia(.1);
+    }
+
+    .town-scene[data-town-architecture="arthropod"] .town-building__roof,
+    .town-scene[data-town-architecture="arthropod"] .town-art {
+        filter: saturate(1.16) hue-rotate(-12deg);
+    }
+
+    .town-scene[data-town-architecture="avian"] .town-art__dome,
+    .town-scene[data-town-architecture="avian"] .town-building__roof--cool {
+        filter: brightness(1.15) saturate(1.15);
+    }
+
+    .town-scene[data-town-architecture="reptilian"] .town-building__wall,
+    .town-scene[data-town-architecture="reptilian"] .town-art__tower {
+        filter: saturate(.82) contrast(1.1);
+    }
+
+    .town-scene.is-life-paused .town-environment *,
+    .town-scene.is-life-paused .town-life *,
+    .town-environment.is-paused *,
+    .town-life.is-paused * {
+        animation-play-state: paused;
+    }
+
+    .town-environment.is-low-power .town-environment__particle:nth-child(n + 5) {
+        display: none;
+    }
+
+    .town-environment.is-reduced-motion .town-environment__weather,
+    .town-life.is-reduced-motion .town-life__resident,
+    .town-life.is-reduced-motion .town-life__activity {
+        display: none;
+    }
+
     @keyframes remaster-water {
         to { stroke-dashoffset: -38; }
+    }
+
+    @keyframes remaster-rain-fall {
+        to { transform: translate(-8px, 48px); opacity: .1; }
+    }
+
+    @keyframes remaster-wind-fall {
+        to { transform: translate(26px, 48px); opacity: .1; }
+    }
+
+    @keyframes remaster-canal-current {
+        to { stroke-dashoffset: -40; }
+    }
+
+    @keyframes remaster-pool-shimmer {
+        50% { opacity: .64; transform: scaleX(1.04); }
+    }
+
+    @keyframes remaster-magnetic-arc {
+        50% { opacity: .42; transform: translateY(-6px); }
+    }
+
+    @keyframes remaster-lightning-flash {
+        0%, 82%, 100% { opacity: 0; }
+        86%, 90% { opacity: 1; }
+    }
+
+    @keyframes remaster-life-route-a {
+        50% { transform: translate(15px, -7px); }
+    }
+
+    @keyframes remaster-life-route-b {
+        50% { transform: translate(-12px, 8px); }
+    }
+
+    @keyframes remaster-life-route-c {
+        50% { transform: translate(11px, 9px); }
+    }
+
+    @keyframes remaster-tentacle-sway {
+        50% { transform: skewX(-9deg); }
+    }
+
+    @keyframes remaster-life-wheel {
+        to { transform: rotate(360deg); }
+    }
+
+    @keyframes remaster-industrial-glow {
+        50% { filter: drop-shadow(0 0 5px #ffce70); opacity: .74; }
     }
 
     @keyframes remaster-flag {

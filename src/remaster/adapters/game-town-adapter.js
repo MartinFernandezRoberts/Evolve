@@ -56,6 +56,17 @@ function getTechnologies(gameState) {
         .map(([id, level]) => ({ id, level }));
 }
 
+function getEnvironment(city, calendar) {
+    return {
+        season: typeof calendar.season === 'number' ? calendar.season : null,
+        weather: typeof calendar.weather === 'number' ? calendar.weather : null,
+        temperature: typeof calendar.temp === 'number' ? calendar.temp : null,
+        wind: typeof calendar.wind === 'number' ? calendar.wind : null,
+        day: typeof calendar.day === 'number' ? calendar.day : null,
+        planetTraits: Array.isArray(city.ptrait) ? city.ptrait.filter((trait) => typeof trait === 'string') : []
+    };
+}
+
 function makeDistrict(layout, city) {
     const buildings = layout.buildingIds.map((id) => buildTownBuilding(id, city[id])).filter((building) => building.count > 0);
     const count = buildings.reduce((total, building) => total + building.count, 0);
@@ -131,11 +142,12 @@ export function createGameTownSnapshot(gameState, readVisualBuildingState) {
         districts: TOWN_DISTRICT_LAYOUT.map((layout) => makeDistrict(layout, city)),
         visualBuildings,
         context: {
-            species: { id: speciesId, label: species.name || humanizeId(speciesId) },
+            species: { id: speciesId, label: species.name || humanizeId(speciesId), type: species.type || 'other' },
             biome: { id: biomeId, label: biome.label || biomeId },
             planet: species.home || null,
             season: typeof calendar.season === 'number' ? calendar.season : null,
             weather: typeof calendar.weather === 'number' ? calendar.weather : null,
+            environment: getEnvironment(city, calendar),
             population: { amount: Number(populationResource.amount || 0), max: typeof populationResource.max === 'number' ? populationResource.max : 0, label: populationResource.name || humanizeId(speciesId) },
             workers: getWorkers(gameState),
             buildings,

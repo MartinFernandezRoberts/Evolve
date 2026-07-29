@@ -26,6 +26,7 @@ producción, requisitos, asequibilidad ni escrituras.
 | `context.species` | Id y nombre de especie. | Temas y paneles posteriores. |
 | `context.biome` | Id y nombre del bioma. | Tema ambiental posterior. |
 | `context.planet` | Planeta de origen mostrado por la raza. | Contexto de escena posterior. |
+| `context.environment` | Estación, clima, temperatura, viento, día y `city.ptrait` en su codificación original. | Velo ambiental, lluvia y rasgos planetarios sin reglas nuevas. |
 | `context.season`, `context.weather` | Códigos originales de calendario. | Ambiente sin recalcular clima. |
 | `context.population` | Recurso de población con cantidad y máximo. | HUD posterior. |
 | `context.workers` | Entradas de trabajo y cupo ya presentes. | Distrito y panel posteriores. |
@@ -39,6 +40,15 @@ producción, requisitos, asequibilidad ni escrituras.
 coordenadas, colores y variantes de arte de cada distrito vienen de
 `src/remaster/config/town-layout.js`; son presentación estática y no se guardan
 en la partida.
+
+`context.species.type` conserva el grupo original de especie para escoger una
+familia visual de arquitectura y habitantes abstractos. La capa de vida también
+consume este muestreo de un segundo: la población se muestra por rangos
+decorativos y las viñetas de agricultor, minería, transporte, investigación,
+guardia e industria se habilitan mediante trabajadores o edificios ya presentes.
+No hay una lista de habitantes ni se calcula producción en la escena.
+`calendar.day` no aporta una hora o fase diurna fiable; por ello no se inventa
+un ciclo de día/noche.
 
 `visualBuildings` se limita a ids incluidos en `BuildingVisualRegistry`. El
 adaptador recibe desde la integración los resultados de las comprobaciones

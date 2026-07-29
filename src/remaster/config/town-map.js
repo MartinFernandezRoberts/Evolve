@@ -158,11 +158,12 @@ export function createMockTownSnapshot() {
             { id: 'fission_power', district: 'industry', label: 'Central de fisión bloqueada', count: 0, on: 0, unlocked: false, affordable: null }
         ],
         context: {
-            species: { id: 'mock', label: 'Muestra' },
+            species: { id: 'mock', label: 'Muestra', type: 'aquatic' },
             biome: { id: 'grassland', label: 'Pradera' },
             planet: 'Mundo de demostración',
             season: 0,
             weather: 0,
+            environment: { season: 0, weather: 0, temperature: 1, wind: 0, day: 42, planetTraits: [] },
             population: { amount: 32, max: 50, label: 'Habitantes' },
             workers: [],
             buildings: [],

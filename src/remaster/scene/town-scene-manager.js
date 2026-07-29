@@ -76,6 +76,7 @@ class TownSceneManager {
             else {
                 this.scene.setCommands(this.commands, (event) => this.handleSceneAction(event));
             }
+            this.scene.setMotionState({ hidden: document.hidden });
             this.startUpdates();
         }
         else {
@@ -111,6 +112,7 @@ class TownSceneManager {
     }
 
     handleVisibilityChange() {
+        this.scene?.setMotionState({ hidden: document.hidden });
         if (!document.hidden && this.view === 'scene') {
             this.refreshSnapshot();
         }

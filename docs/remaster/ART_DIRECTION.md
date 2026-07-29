@@ -33,6 +33,12 @@ Es inspiración de lenguaje visual general, no una recreación de una obra concr
 - Respetar `prefers-reduced-motion`; el movimiento no transmite información imprescindible sin alternativa textual.
 - No añadir audio en el MVP.
 
+## Adaptación de especie y entorno
+
+- La familia original de la especie determina una variación de arquitectura y habitantes abstractos: acuática, mamífera, artrópoda, aviar, reptiliana, humanoide o adaptable para otros grupos. Es una capa de color, materiales y siluetas; no cambia costes, empleos ni desbloqueos.
+- Las especies acuáticas usan canales, estanques, detalles húmedos y figuras abstractas. Octigoran recibe una variante de canales más amplios y tentáculos SVG originales, nunca personajes o sprites derivados de terceros.
+- Estación, clima y rasgos planetarios sólo tintan, velan o decoran la escena usando los códigos ya presentes en el snapshot. No se deduce una hora del día cuando el motor no la expone.
+
 ## Producción de assets
 
 - Priorizar SVG y CSS originales en el MVP. Cualquier bitmap generado debe ser nuevo para el proyecto, incluir fuente/prompt/licencia en el manifest y no contener marcas, personajes ni elementos protegidos de terceros.
