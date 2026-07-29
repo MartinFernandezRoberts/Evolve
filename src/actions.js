@@ -4,7 +4,7 @@ import { timeCheck, timeFormat, vBind, popover, clearPopper, flib, tagEvent, cle
 import { unlockAchieve, challengeIcon, alevel, universeAffix, checkAdept } from './achieve.js';
 import { races, traits, genus_def, neg_roll_traits, randomMinorTrait, cleanAddTrait, combineTraits, biomes, planetTraits, setJType, altRace, setTraitRank, setImitation, shapeShift, basicRace, fathomCheck, traitCostMod, renderSupernatural, blubberFill, traitRank } from './races.js';
 import { defineResources, unlockCrates, unlockContainers, crateValue, containerValue, galacticTrade, spatialReasoning, resource_values, initResourceTabs, marketItem, containerItem, tradeSummery, faithBonus, templePlasmidBonus, faithTempleCount } from './resources.js';
-import { loadFoundry, defineJobs, jobScale, workerScale, job_desc } from './jobs.js';
+import { loadFoundry, defineJobs, jobScale, workerScale, job_desc, changeJobWorkers } from './jobs.js';
 import { loadIndustry, defineIndustry, nf_resources, gridDefs, addSmelter, cancelRituals } from './industry.js';
 import { defineGovernment, defineGarrison, buildGarrison, commisionGarrison, foreignGov, armyRating, garrisonSize, govEffect } from './civics.js';
 import { spaceTech, interstellarTech, galaxyTech, incrementStruct, universe_affixes, renderSpace, piracy, fuel_adjust, isStargateOn } from './space.js';
@@ -18,6 +18,7 @@ import { defineGovernor, govActive, removeTask, gov_tasks } from './governor.js'
 import { bioseed } from './resets.js';
 import { loadTab } from './index.js';
 import { createGameTownSnapshot } from './remaster/adapters/game-town-adapter.js';
+import { getBuildingVisualDefinition } from './remaster/config/building-visual-registry.js';
 import { destroyTownScene, syncTownScene } from './remaster/scene/town-scene-manager.js';
 
 export const actions = {
@@ -6014,6 +6015,130 @@ export function gainTech(action){
 
 export var cLabels = global.settings['cLabels'];
 
+function htmlToText(value){
+    const element = document.createElement('div');
+    element.innerHTML = String(value || '');
+    return (element.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
+function getActionText(c_action, field){
+    if (!c_action[field]){
+        return '';
+    }
+    const value = typeof c_action[field] === 'function' ? c_action[field]() : c_action[field];
+    return htmlToText(value);
+}
+
+/** Lee la lista de costes con el renderizador original, sin reproducir costes ni requisitos. */
+function getCityActionCostRows(c_action, id){
+    const preview = $('<div></div>');
+    actionDesc(preview,c_action,global.city[id],false,'city',id);
+    return preview.find('.costList > div').toArray().map((element) => ({
+        text: $(element).text().trim(),
+        status: $(element).hasClass('has-text-danger') ? 'insufficient' : ($(element).hasClass('has-text-alert') ? 'warning' : 'sufficient')
+    }));
+}
+
+function getCityVisualWorkers(id){
+    const definition = getBuildingVisualDefinition(id);
+    if (!definition){
+        return [];
+    }
+    return definition.workerJobs.map((job) => {
+        const worker = global.civic[job];
+        if (!worker){
+            return null;
+        }
+        const adjustable = job !== 'garrison' && worker.display && !(global.race['warlord'] && job === 'miner');
+        const defaultWorker = global.civic[global.civic.d_job];
+        return {
+            id: job,
+            label: worker.name || loc(`job_${job}`),
+            workers: Number(worker.workers || 0),
+            max: typeof worker.max === 'number' ? worker.max : null,
+            canAssign: Boolean(adjustable && defaultWorker && defaultWorker.workers > 0 && (worker.max === -1 || worker.workers < worker.max)),
+            canRemove: Boolean(adjustable && worker.workers > 0)
+        };
+    }).filter(Boolean);
+}
+
+/**
+ * Presentación de una acción de ciudad calculada por las funciones originales.
+ * Sus textos y costes ya están resueltos antes de cruzar la frontera del
+ * remaster; los componentes visuales no consultan `global` ni acciones.
+ */
+function getCityVisualBuildingDetail(id, c_action){
+    const cityState = global.city[id] || {};
+    const power = typeof c_action.powered === 'function' ? c_action.powered() : null;
+    const queue = (global.queue?.queue || []).filter((entry) => entry.id === c_action.id);
+    const queuedAmount = queue.reduce((total, entry) => total + Number(entry.q || 0), 0);
+    const supportsPower = Boolean(getBuildingVisualDefinition(id)?.states.supportsPower && typeof cityState.on === 'number');
+
+    return {
+        description: getActionText(c_action,'desc'),
+        effect: getActionText(c_action,'effect'),
+        costs: getCityActionCostRows(c_action,id),
+        affordable: checkAffordable(c_action,false,false),
+        buildAmounts: c_action['no_multi'] ? [1] : [1,5,10],
+        maxBuild: false,
+        energy: typeof power === 'number' ? { value: Math.abs(power), direction: power < 0 ? 'produced' : 'used' } : null,
+        enabled: supportsPower ? { on: cityState.on, off: Math.max(0, cityState.count - cityState.on) } : null,
+        workers: getCityVisualWorkers(id),
+        queue: { count: queue.length, amount: queuedAmount }
+    };
+}
+
+/**
+ * Ejecuta una construcción visual mediante `runAction`, la misma ruta privada
+ * que usa la tarjeta clásica. `quantity` sólo sustituye el multiplicador de
+ * teclado; no altera costes, cola, desbloqueos ni fórmulas.
+ *
+ * @param {string} id Id original de `actions.city`.
+ * @param {number} quantity Unidades solicitadas por la interfaz visual.
+ * @returns {{ success: boolean, built: number, queued: number }} Resultado del motor ya aplicado.
+ */
+export function runVisualCityBuild(id, quantity){
+    const c_action = actions.city[id];
+    const cityState = global.city[id];
+    if (!c_action || !cityState || !Number.isInteger(quantity) || quantity < 1){
+        return { success: false, built: 0, queued: 0 };
+    }
+    const beforeCount = cityState.count;
+    const beforeQueue = (global.queue?.queue || []).filter((entry) => entry.id === c_action.id).reduce((total, entry) => total + Number(entry.q || 0), 0);
+    runAction(c_action,'city',id,{ quantity, queue: false });
+    const built = Math.max(0, cityState.count - beforeCount);
+    const queued = Math.max(0, (global.queue?.queue || []).filter((entry) => entry.id === c_action.id).reduce((total, entry) => total + Number(entry.q || 0), 0) - beforeQueue);
+    const success = built > 0 || queued > 0;
+    if (!success){
+        const title = typeof c_action.title === 'function' ? c_action.title() : c_action.title;
+        messageQueue(`${title}: ${loc('not_affordable')}`,'danger',false,['building_queue']);
+    }
+    return { success, built, queued };
+}
+
+/** Activa o desactiva una estructura visual usando el control de energía original. */
+export function setVisualCityPower(id, enabled){
+    const c_action = actions.city[id];
+    const changed = c_action ? setActionPower(c_action,'city',id,enabled ? 1 : -1) : 0;
+    return { success: changed !== 0, changed: Math.abs(changed) };
+}
+
+/** Asigna o retira un trabajador mediante el control original de Civismo. */
+export function setVisualCityWorkers(id, job, amount){
+    const definition = getBuildingVisualDefinition(id);
+    if (!definition?.workerJobs.includes(job) || job === 'garrison'){
+        return { success: false, changed: 0 };
+    }
+    const changed = changeJobWorkers(job, amount);
+    return { success: changed !== 0, changed: Math.abs(changed) };
+}
+
+const cityVisualCommands = Object.freeze({
+    build: runVisualCityBuild,
+    setPower: setVisualCityPower,
+    setWorkers: setVisualCityWorkers
+});
+
 /**
  * Puente de integración para el remaster. Reutiliza exactamente las
  * comprobaciones y el título de la acción existente, sin trasladar fórmulas a
@@ -6021,7 +6146,7 @@ export var cLabels = global.settings['cLabels'];
  * juego por sí mismo.
  *
  * @param {string} id Id de una acción de ciudad existente.
- * @returns {{ label: string, unlocked: boolean, affordable: boolean|null }}
+ * @returns {{ label: string, unlocked: boolean, affordable: boolean|null, detail: object|null }}
  */
 function getCityVisualBuildingState(id){
     const action = actions.city[id];
@@ -6033,7 +6158,8 @@ function getCityVisualBuildingState(id){
     return {
         label: typeof label === 'string' ? label : id,
         unlocked,
-        affordable: unlocked ? checkAffordable(action,false,false) : null
+        affordable: unlocked ? checkAffordable(action,false,false) : null,
+        detail: unlocked || global.city[id]?.count > 0 ? getCityVisualBuildingDetail(id,action) : null
     };
 }
 
@@ -6110,6 +6236,7 @@ export function drawCity(){
         enabled: global.settings.visualRemaster,
         view: global.settings.visualRemasterView,
         readSnapshot: () => createGameTownSnapshot(global, getCityVisualBuildingState),
+        commands: cityVisualCommands,
         onViewChange(view){
             global.settings.visualRemasterView = view;
             drawCity();
@@ -6415,32 +6542,10 @@ export function setAction(c_action,action,type,old,prediction){
                 return `off: ${global[action][type].count - global[action][type].on}`;
             },
             power_on(){
-                let keyMult = keyMultiplier();
-                for (let i=0; i<keyMult; i++){
-                    if (global[action][type].on < global[action][type].count){
-                        global[action][type].on++;
-                    }
-                    else {
-                        break;
-                    }
-                }
-                if (c_action['postPower']){
-                    callback_queue.set([c_action, 'postPower'], [true]);
-                }
+                setActionPower(c_action,action,type,keyMultiplier());
             },
             power_off(){
-                let keyMult = keyMultiplier();
-                for (let i=0; i<keyMult; i++){
-                    if (global[action][type].on > 0){
-                        global[action][type].on--;
-                    }
-                    else {
-                        break;
-                    }
-                }
-                if (c_action['postPower']){
-                    callback_queue.set([c_action, 'postPower'], [false]);
-                }
+                setActionPower(c_action,action,type,-keyMultiplier());
             },
             repair(){
                 return global[action][type].repair;
@@ -6522,7 +6627,49 @@ export function setAction(c_action,action,type,old,prediction){
     });
 }
 
-function runAction(c_action,action,type){
+/**
+ * Ruta de energía compartida por los controles clásicos y las integraciones
+ * visuales. El signo de `amount` expresa encender o apagar; no calcula consumo
+ * ni modifica recursos, sólo aplica la semántica original de los botones.
+ *
+ * @param {object} c_action Definición original de la acción.
+ * @param {string} action Categoría original, por ejemplo `city`.
+ * @param {string} type Id de la acción dentro de la categoría.
+ * @param {number} amount Cantidad firmada de estructuras que se activa o desactiva.
+ * @returns {number} Cambio efectivo de estructuras activas.
+ */
+export function setActionPower(c_action,action,type,amount){
+    const structure = global[action]?.[type];
+    const direction = Math.sign(amount);
+    const repeats = Math.abs(Math.trunc(amount));
+    if (!structure || typeof structure.on !== 'number' || !direction || !repeats){
+        return 0;
+    }
+
+    let changed = 0;
+    for (let i = 0; i < repeats; i++){
+        if (direction > 0){
+            if (structure.on >= structure.count){
+                break;
+            }
+            structure.on++;
+            changed++;
+        }
+        else {
+            if (structure.on <= 0){
+                break;
+            }
+            structure.on--;
+            changed--;
+        }
+    }
+    if (c_action['postPower']){
+        callback_queue.set([c_action, 'postPower'], [direction > 0]);
+    }
+    return changed;
+}
+
+function runAction(c_action,action,type,options = {}){
     if (c_action.id === 'spcdock-launch_ship'){
         c_action.action({isQueue: false});
     }
@@ -6570,17 +6717,21 @@ function runAction(c_action,action,type){
                 break;
             default:
                 {
-                    let keyMult = c_action['no_multi'] ? 1 : keyMultiplier();
+                    const hasRequestedQuantity = Number.isInteger(options.quantity) && options.quantity > 0;
+                    const queueRequested = typeof options.queue === 'boolean'
+                        ? options.queue
+                        : global.settings.qKey && keyMap.q;
+                    let keyMult = c_action['no_multi'] ? 1 : (hasRequestedQuantity ? options.quantity : keyMultiplier());
                     if (c_action['grant']){
                         keyMult = 1;
                     }
                     let grant = false;
                     let add_queue = false;
-                    let loopNum = global.settings.qKey && keyMap.q ? 1 : keyMult;
+                    let loopNum = queueRequested ? 1 : keyMult;
                     for (let i=0; i<loopNum; i++){
                         let res = false;
-                        if ((global.settings.qKey && keyMap.q) || (!(res = c_action.action({isQueue: false})))){
-                            if (res !== 0 && global.tech['queue'] && (keyMult === 1 || (global.settings.qKey && keyMap.q))){
+                        if (queueRequested || (!(res = c_action.action({isQueue: false})))){
+                            if (res !== 0 && global.tech['queue'] && (keyMult === 1 || queueRequested)){
                                 let used = 0;
                                 let buid_max = c_action['queue_complete'] ? c_action.queue_complete() : Number.MAX_SAFE_INTEGER;
                                 for (let j=0; j<global.queue.queue.length; j++){
@@ -6590,7 +6741,9 @@ function runAction(c_action,action,type){
                                     }
                                 }
                                 if (used < global.queue.max && buid_max > 0){
-                                    let repeat = global.settings.qKey ? keyMult : 1;
+                                    let repeat = typeof options.queue === 'boolean'
+                                        ? (queueRequested ? keyMult : 1)
+                                        : (global.settings.qKey ? keyMult : 1);
                                     if (repeat > global.queue.max - used){
                                         repeat = global.queue.max - used;
                                     }

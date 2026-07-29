@@ -50,6 +50,37 @@ export const TOWN_SCENE_CONTRACT_VERSION = 2;
  * @property {number|null} on Cantidad activa original cuando aplica.
  * @property {boolean} unlocked Resultado de los requisitos originales.
  * @property {boolean|null} affordable Resultado de la asequibilidad original si está desbloqueado.
+ * @property {TownBuildingDetail|null} [detail] Engine-prepared detail panel data.
+ */
+
+/**
+ * @typedef {Object} TownBuildingCost
+ * @property {string} text Cost formatted by the original renderer.
+ * @property {'sufficient'|'warning'|'insufficient'} status Engine-resolved availability.
+ */
+
+/**
+ * @typedef {Object} TownBuildingWorker
+ * @property {string} id Original Civics job id.
+ * @property {string} label Localized engine label.
+ * @property {number} workers Current worker count.
+ * @property {number|null} max Original job capacity.
+ * @property {boolean} canAssign Original assignment constraints result.
+ * @property {boolean} canRemove Original removal constraints result.
+ */
+
+/**
+ * @typedef {Object} TownBuildingDetail
+ * @property {string} description Original action description without HTML markup.
+ * @property {string} effect Original production or effect without HTML markup.
+ * @property {TownBuildingCost[]} costs Current cost without scene-side calculation.
+ * @property {boolean} affordable Original complete affordability result.
+ * @property {number[]} buildAmounts Multipliers supported by the original action.
+ * @property {boolean} maxBuild Whether the engine offers a native build-max semantic.
+ * @property {{ value: number, direction: 'used'|'produced' }|null} energy Original `powered()` result.
+ * @property {{ on: number, off: number }|null} enabled Active structure state.
+ * @property {TownBuildingWorker[]} workers Related original jobs.
+ * @property {{ count: number, amount: number }} queue Original building queue entries.
  */
 
 /**

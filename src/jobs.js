@@ -476,6 +476,49 @@ export function jobName(job){
     return name;
 }
 
+/**
+ * Cambia trabajadores entre un empleo y el empleo predeterminado usando la
+ * misma ruta que los controles clásicos de Civismo. Esta función no conoce la
+ * interfaz que la invoca: centraliza las comprobaciones y la actualización de
+ * `assigned` para que las superficies alternativas no repliquen la mecánica.
+ *
+ * @param {string} job Id original de `global.civic`.
+ * @param {number} amount Cantidad firmada: positiva asigna, negativa retira.
+ * @returns {number} Cambio efectivo de trabajadores en el empleo solicitado.
+ */
+export function changeJobWorkers(job, amount){
+    const target = global.civic[job];
+    const defaultJob = global.civic[global.civic.d_job];
+    const direction = Math.sign(amount);
+    const repeats = Math.abs(Math.trunc(amount));
+
+    if (!target || !defaultJob || !direction || !repeats){
+        return 0;
+    }
+
+    let changed = 0;
+    for (let i = 0; i < repeats; i++){
+        if (direction > 0){
+            if (!((target.max === -1 || target.workers < target.max) && defaultJob.workers > 0)){
+                break;
+            }
+            target.workers++;
+            defaultJob.workers--;
+            changed++;
+        }
+        else {
+            if (target.workers <= 0){
+                break;
+            }
+            target.workers--;
+            defaultJob.workers++;
+            changed--;
+        }
+        target.assigned = target.workers;
+    }
+    return changed;
+}
+
 function loadJob(job, define, impact, stress, color){
     let servant = false;
     if (define === 'servant'){
@@ -586,30 +629,10 @@ function loadJob(job, define, impact, stress, color){
                     return global.civic[j].display;
                 },
                 add(){
-                    let keyMult = keyMultiplier();
-                    for (let i=0; i<keyMult; i++){
-                        if ((global['civic'][job].max === -1 || global.civic[job].workers < global['civic'][job].max) && (global.civic[global.civic.d_job] && global.civic[global.civic.d_job].workers > 0)){
-                            global.civic[job].workers++;
-                            global.civic[global.civic.d_job].workers--;
-                            global.civic[job].assigned = global.civic[job].workers;
-                        }
-                        else {
-                            break;
-                        }
-                    }
+                    changeJobWorkers(job, keyMultiplier());
                 },
                 sub(){
-                    let keyMult = keyMultiplier();
-                    for (let i=0; i<keyMult; i++){
-                        if (global.civic[job].workers > 0){
-                            global.civic[job].workers--;
-                            global.civic[global.civic.d_job].workers++;
-                            global.civic[job].assigned = global.civic[job].workers;
-                        }
-                        else {
-                            break;
-                        }
-                    }
+                    changeJobWorkers(job, -keyMultiplier());
                 },
                 level(job){
                     if (global.civic[job].workers === 0){

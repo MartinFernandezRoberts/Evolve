@@ -92,7 +92,8 @@ function getVisualBuildings(city, readVisualBuildingState) {
             count,
             on: typeof cityState?.on === 'number' ? cityState.on : null,
             unlocked: count > 0 || originalState.unlocked === true,
-            affordable: typeof originalState.affordable === 'boolean' ? originalState.affordable : null
+            affordable: typeof originalState.affordable === 'boolean' ? originalState.affordable : null,
+            detail: originalState.detail && typeof originalState.detail === 'object' ? originalState.detail : null
         };
     });
 }

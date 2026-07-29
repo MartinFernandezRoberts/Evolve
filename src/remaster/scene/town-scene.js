@@ -20,7 +20,7 @@ function clamp(value, min, max) {
 export class TownScene {
     /**
      * @param {HTMLElement} root Elemento donde se monta la escena.
-     * @param {{ snapshot: import('../adapters/town-scene-contracts.js').TownSnapshot, onSelectionChange?: (district: import('../adapters/town-scene-contracts.js').TownDistrict) => void }} options
+     * @param {{ snapshot: import('../adapters/town-scene-contracts.js').TownSnapshot, commands?: object, onSelectionChange?: (district: import('../adapters/town-scene-contracts.js').TownDistrict) => void, onAction?: (event: object) => void }} options
      */
     constructor(root, options) {
         if (!root) {
@@ -33,15 +33,18 @@ export class TownScene {
         this.root = root;
         this.snapshot = options.snapshot;
         this.onSelectionChange = options.onSelectionChange || (() => {});
+        this.commands = options.commands || null;
+        this.onAction = options.onAction || (() => {});
         this.nodes = [];
         this.nodeById = new Map();
         this.resourceNodes = new Map();
-        this.buildingLayer = new TownBuildingLayer();
+        this.buildingLayer = new TownBuildingLayer({ onSelect: (id) => this.selectBuilding(id) });
         this.structureKey = '';
         this.panelKey = '';
         this.zoom = 1;
         this.pan = { x: 0, y: 0 };
         this.selectedId = this.snapshot.districts[0]?.id || '';
+        this.selectedBuildingId = '';
         this.drag = null;
         this.boundWheel = this.handleWheel.bind(this);
         this.boundPointerDown = this.handlePointerDown.bind(this);
@@ -109,6 +112,9 @@ export class TownScene {
         if (!snapshot.districts.some((district) => district.id === this.selectedId)) {
             this.selectedId = snapshot.districts[0]?.id || '';
         }
+        if (this.selectedBuildingId && !snapshot.visualBuildings.some((building) => building.id === this.selectedBuildingId && (building.unlocked || building.count > 0))) {
+            this.selectedBuildingId = '';
+        }
 
         const nextStructureKey = this.getStructureKey(snapshot);
         const structureChanged = nextStructureKey !== this.structureKey;
@@ -164,6 +170,12 @@ export class TownScene {
         this.renderSelectedPanel(forcePanel);
     }
 
+    /** Actualiza los comandos sin hacer que la escena conozca el motor. */
+    setCommands(commands, onAction) {
+        this.commands = commands || null;
+        this.onAction = onAction || (() => {});
+    }
+
     syncResourceDisplay() {
         const visibleResources = this.snapshot.resources.slice(0, 6);
         const ids = new Set(visibleResources.map((resource) => resource.id));
@@ -202,10 +214,18 @@ export class TownScene {
         if (!district) {
             return;
         }
-        const panelKey = JSON.stringify({ source: this.snapshot.source, district });
+        const selectedBuilding = this.snapshot.visualBuildings.find((building) => building.id === this.selectedBuildingId) || null;
+        const panelKey = JSON.stringify({ source: this.snapshot.source, district, selectedBuilding });
         if (force || panelKey !== this.panelKey) {
             this.panelKey = panelKey;
-            renderTownPanel(this.panel, district, this.snapshot.source);
+            renderTownPanel(this.panel, district, this.snapshot.source, {
+                buildings: this.snapshot.visualBuildings.filter((building) => building.district === district.id),
+                selectedBuilding,
+                commands: this.commands,
+                onSelectBuilding: (id) => this.selectBuilding(id),
+                onAction: (event) => this.handleBuildingAction(event),
+                onBack: () => this.selectDistrict(district.id, false)
+            });
         }
     }
 
@@ -297,12 +317,34 @@ export class TownScene {
             return;
         }
         this.selectedId = district.id;
+        this.selectedBuildingId = '';
         this.panelKey = '';
         updateTownNodeSelection(this.nodes, district.id);
         this.renderSelectedPanel(true);
         if (notify) {
             this.onSelectionChange(district);
         }
+    }
+
+    /** @param {string} id */
+    selectBuilding(id) {
+        const building = this.snapshot.visualBuildings.find((candidate) => candidate.id === id && (candidate.unlocked || candidate.count > 0));
+        if (!building) {
+            return;
+        }
+        this.selectedId = building.district;
+        this.selectedBuildingId = building.id;
+        this.panelKey = '';
+        updateTownNodeSelection(this.nodes, building.district);
+        this.renderSelectedPanel(true);
+    }
+
+    /** @param {{ buildingId?: string, result?: { success?: boolean } }} event */
+    handleBuildingAction(event) {
+        if (event?.result?.success && event.buildingId) {
+            this.buildingLayer.flash(event.buildingId);
+        }
+        this.onAction(event || {});
     }
 
     showTooltip(district, element) {

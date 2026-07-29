@@ -35,9 +35,16 @@ function restartMotion(element, className) {
  * TownSnapshot y definiciones visuales; no conoce ni consulta el motor.
  */
 export class TownBuildingLayer {
-    constructor() {
+    /** @param {{ onSelect?: (id: string) => void }} [options] */
+    constructor(options = {}) {
         this.entries = new Map();
         this.history = new Map();
+        this.onSelect = options.onSelect || (() => {});
+    }
+
+    /** @param {(id: string) => void} onSelect */
+    setOnSelect(onSelect) {
+        this.onSelect = onSelect || (() => {});
     }
 
     /** @param {SVGGElement} layer @param {object} definition @param {object} building */
@@ -48,6 +55,11 @@ export class TownBuildingLayer {
         element.dataset.townBuilding = building.id;
         element.setAttribute('transform', `translate(${position.x} ${position.y}) scale(${position.scale})`);
         element.setAttribute('aria-hidden', 'true');
+        const onClick = (event) => {
+            event.stopPropagation();
+            this.onSelect(building.id);
+        };
+        element.addEventListener('click', onClick);
 
         const plot = createSvgElement('g');
         plot.classList.add('town-building__plot');
@@ -69,7 +81,7 @@ export class TownBuildingLayer {
 
         element.append(plot, art, supply, badge);
         layer.append(element);
-        return { element, art, plot, supply, badge, state: null, count: null, level: null, unlocked: null, label: '' };
+        return { element, art, plot, supply, badge, onClick, state: null, count: null, level: null, unlocked: null, label: '' };
     }
 
     /** @param {object} entry @param {object} definition @param {object} building @param {{ count: number, unlocked: boolean }|undefined} previous */
@@ -156,6 +168,7 @@ export class TownBuildingLayer {
 
         this.entries.forEach((entry, id) => {
             if (!nextIds.has(id)) {
+                entry.element.removeEventListener('click', entry.onClick);
                 entry.element.remove();
                 this.entries.delete(id);
             }
@@ -169,11 +182,23 @@ export class TownBuildingLayer {
     }
 
     reset() {
+        this.entries.forEach((entry) => entry.element.removeEventListener('click', entry.onClick));
         this.entries.clear();
     }
 
+    /** @param {string} id */
+    flash(id) {
+        const entry = this.entries.get(id);
+        if (entry) {
+            restartMotion(entry.element, 'is-actioned');
+        }
+    }
+
     destroy() {
-        this.entries.forEach((entry) => entry.element.remove());
+        this.entries.forEach((entry) => {
+            entry.element.removeEventListener('click', entry.onClick);
+            entry.element.remove();
+        });
         this.entries.clear();
         this.history.clear();
     }
