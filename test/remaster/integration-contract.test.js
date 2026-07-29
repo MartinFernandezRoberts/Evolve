@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { assertProductionBundleHasNoMocks } from '../../buildRemasterValidation.js';
 import { createGameActionBridge } from '../../src/remaster/adapters/game-action-bridge.js';
+import { createEvolutionCoverageMatrix, hasCompleteEvolutionCoverage } from '../../src/remaster/adapters/evolution-coverage.js';
 import { createGamePhaseSnapshot } from '../../src/remaster/adapters/game-phase-adapter.js';
 import { captureTownActionParityState, captureTownSaveParityState, compareTownActionParity } from '../../src/remaster/adapters/town-action-parity-harness.js';
 import { getRemasterPreferences, migrateLegacyRemasterPreferences, setRemasterEnabled, setRemasterView } from '../../src/remaster/config/remaster-preferences.js';
@@ -80,14 +81,33 @@ function testActionBridgeOnlyDelegates() {
         setPower: (id, enabled) => {
             calls.push(['power', id, enabled]);
             return { success: true };
+        },
+        executeEvolutionAction: (id) => {
+            calls.push(['evolution', id]);
+            return { success: true };
         }
     });
 
     assert.deepEqual(bridge.build('farm', 5), { success: true, built: 5 });
     assert.deepEqual(bridge.setPower('coal_power', false), { success: true });
+    assert.deepEqual(bridge.executeEvolutionAction('membrane'), { success: true });
     assert.deepEqual(bridge.setWorkers('farmer', 'farmer', 1), { success: false, reason: 'unsupported' });
-    assert.deepEqual(calls, [['build', 'farm', 5], ['power', 'coal_power', false]]);
+    assert.deepEqual(calls, [['build', 'farm', 5], ['power', 'coal_power', false], ['evolution', 'membrane']]);
     assert.equal(Object.isFrozen(bridge), true);
+}
+
+function testEvolutionCoverageMatrixProvidesAnExplicitFallback() {
+    const matrix = createEvolutionCoverageMatrix([
+        { id: 'rna', visible: true, executable: true },
+        { id: 'future_branch', visible: false, executable: true },
+        { id: 'classic_only', visible: true, executable: false }
+    ]);
+    assert.deepEqual(matrix, [
+        { id: 'rna', represented: true, executable: true, fallback: null },
+        { id: 'future_branch', represented: false, executable: false, fallback: 'classic-hidden-until-available' },
+        { id: 'classic_only', represented: false, executable: false, fallback: 'classic-unsupported' }
+    ]);
+    assert.equal(hasCompleteEvolutionCoverage(matrix), true);
 }
 
 function testParityReducers() {
@@ -164,7 +184,29 @@ function testPhaseSnapshotsAreFrozenAndDoNotRequireGlobal() {
     const town = Object.freeze({ contractVersion: 3, source: 'engine' });
     const snapshot = createGamePhaseSnapshot(state, {
         readPhase: () => ({ kind: 'civilization' }),
-        readEvolution: () => ({ sentienceReady: false }),
+        readEvolution: () => ({
+            sentienceReady: false,
+            progress: { final: 40 },
+            resources: [{ id: 'RNA', label: 'RNA', value: '12 / 20', amount: 12, max: 20, diff: 1 }],
+            actions: [{
+                id: 'membrane',
+                actionId: 'evolution-membrane',
+                label: 'Membrane',
+                description: 'A real engine description.',
+                effect: 'A real engine effect.',
+                requirements: [{ id: 'evo', level: 1 }],
+                grant: { id: 'evo', level: 2 },
+                costs: [{ id: 'RNA', text: 'RNA: 2', status: 'sufficient' }],
+                affordable: true,
+                available: true,
+                locked: false,
+                active: false,
+                count: 2,
+                emblem: '',
+                stage: 1
+            }],
+            coverage: [{ id: 'membrane', represented: true, executable: true, fallback: null }]
+        }),
         readRace: () => ({ label: 'Octigoran', type: 'aquatic' }),
         readEnvironment: () => ({ biomeLabel: 'Oceanic' }),
         readCivilization: () => town
@@ -174,6 +216,11 @@ function testPhaseSnapshotsAreFrozenAndDoNotRequireGlobal() {
     assert.equal(snapshot.race.type, 'aquatic');
     assert.deepEqual(snapshot.settlement.buildings, [{ id: 'farm', count: 1 }]);
     assert.equal(snapshot.civilization.town, town);
+    assert.equal(snapshot.evolution.progress.final, 40);
+    assert.deepEqual(snapshot.evolution.resources, [{ id: 'RNA', label: 'RNA', value: '12 / 20', amount: 12, max: 20, diff: 1 }]);
+    assert.equal(snapshot.evolution.actions[0].actionId, 'evolution-membrane');
+    assert.equal(snapshot.evolution.actions[0].available, true);
+    assert.deepEqual(snapshot.evolution.coverage, [{ id: 'membrane', represented: true, executable: true, fallback: null }]);
     assert.equal(Object.isFrozen(snapshot), true);
     assert.equal(Object.isFrozen(snapshot.environment.calendar), true);
     assert.equal(Object.isFrozen(snapshot.settlement.buildings), true);
@@ -202,6 +249,7 @@ function testRemasterLocaleParity() {
 testPreferencesDoNotMutateSaveSchema();
 testViewPreferenceLeavesImportedStateIntact();
 testActionBridgeOnlyDelegates();
+testEvolutionCoverageMatrixProvidesAnExplicitFallback();
 testParityReducers();
 testMockImportBuildGuard();
 testVisualProgressionUsesOnlySnapshotSignals();

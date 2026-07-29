@@ -45,8 +45,11 @@ class StaticPhaseSceneManager {
         this.scene = null;
         this.view = 'classic';
         this.destroyed = false;
+        this.snapshotInterval = null;
         this.boundClick = this.handleClick.bind(this);
         this.boundLocaleChange = this.handleLocaleChange.bind(this);
+        this.boundVisibilityChange = this.handleVisibilityChange.bind(this);
+        this.boundResume = this.handleResume.bind(this);
         this.mount(options, snapshot);
     }
 
@@ -65,8 +68,11 @@ class StaticPhaseSceneManager {
         this.sceneHost = this.root.querySelector('.visual-remaster__scene-host');
         this.root.addEventListener('click', this.boundClick);
         document.addEventListener(LOCALE_CHANGE_EVENT, this.boundLocaleChange);
+        document.addEventListener('visibilitychange', this.boundVisibilityChange);
+        window.addEventListener('focus', this.boundResume);
+        window.addEventListener('pageshow', this.boundResume);
         this.host.prepend(this.root);
-        this.scene = new sceneConstructors[this.kind]();
+        this.scene = new sceneConstructors[this.kind]({ commands: options.commands });
         this.scene.mount(this.sceneHost, snapshot);
         this.refreshLocalizedChrome();
         this.update(options, snapshot);
@@ -75,6 +81,8 @@ class StaticPhaseSceneManager {
     /** @param {RemasterPhaseSceneOptions} options @param {import('../adapters/phase-scene-contracts.js').RemasterPhaseSnapshot} snapshot */
     update(options, snapshot) {
         this.onViewChange = options.onViewChange;
+        this.readSnapshot = options.readSnapshot;
+        this.scene?.setCommands?.(options.commands);
         this.scene?.setSnapshot(snapshot);
         this.setView(options.view);
     }
@@ -102,6 +110,12 @@ class StaticPhaseSceneManager {
         this.root?.querySelectorAll('[data-remaster-view]').forEach((button) => {
             button.setAttribute('aria-pressed', String(button.dataset.remasterView === this.view));
         });
+        if (this.view === 'scene' && !document.hidden) {
+            this.startSnapshotUpdates();
+        }
+        else {
+            this.stopSnapshotUpdates();
+        }
     }
 
     handleClick(event) {
@@ -120,6 +134,51 @@ class StaticPhaseSceneManager {
 
     handleLocaleChange() {
         this.refreshLocalizedChrome();
+        this.refreshSnapshot();
+    }
+
+    startSnapshotUpdates() {
+        if (this.snapshotInterval !== null) {
+            return;
+        }
+        this.snapshotInterval = window.setInterval(() => this.refreshSnapshot(), 1000);
+    }
+
+    stopSnapshotUpdates() {
+        if (this.snapshotInterval !== null) {
+            window.clearInterval(this.snapshotInterval);
+            this.snapshotInterval = null;
+        }
+    }
+
+    refreshSnapshot() {
+        if (this.destroyed || !this.root?.isConnected) {
+            this.destroy();
+            return;
+        }
+        if (document.hidden || this.view !== 'scene' || typeof this.readSnapshot !== 'function') {
+            return;
+        }
+        const snapshot = this.readSnapshot();
+        if (resolveRemasterPhaseScene(snapshot) === this.kind) {
+            this.scene?.setSnapshot(snapshot);
+        }
+    }
+
+    handleVisibilityChange() {
+        if (document.hidden) {
+            this.stopSnapshotUpdates();
+        }
+        else if (this.view === 'scene') {
+            this.refreshSnapshot();
+            this.startSnapshotUpdates();
+        }
+    }
+
+    handleResume() {
+        if (this.view === 'scene' && !document.hidden) {
+            this.refreshSnapshot();
+        }
     }
 
     isMounted() {
@@ -131,8 +190,12 @@ class StaticPhaseSceneManager {
             return;
         }
         this.destroyed = true;
+        this.stopSnapshotUpdates();
         this.scene?.destroy();
         document.removeEventListener(LOCALE_CHANGE_EVENT, this.boundLocaleChange);
+        document.removeEventListener('visibilitychange', this.boundVisibilityChange);
+        window.removeEventListener('focus', this.boundResume);
+        window.removeEventListener('pageshow', this.boundResume);
         this.root?.removeEventListener('click', this.boundClick);
         this.host?.classList.remove('visual-remaster-scene', 'visual-remaster-classic');
         this.root?.remove();

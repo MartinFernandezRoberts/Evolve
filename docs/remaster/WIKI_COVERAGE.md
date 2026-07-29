@@ -33,6 +33,28 @@
 | Espacio, Interstellar, Galaxia, Portal, Tau Ceti y Eden | Estructuras y acciones regionales | `space.js`, `portal.js`, `truepath.js`, `edenic.js` | `wiki/structures.js`, `wiki/projects.js`, `wiki/hell.js` | `UnsupportedPhaseScene` | Arquitectura y adaptadores propios | UI clásica |
 | Importar/exportar, opciones y locales | Save Base64/UTF-16 original, ajuste externo del remaster, cambio de idioma | `functions.js:window.importGame/exportGame`, `locale.js`, `index.js` | `wiki/faq.js`, `wiki/gameplay.js` | No interceptado | Harness de navegador con saves sanitizados | Flujo original |
 
+## Checkpoint 2 update: playable Evolution
+
+`EvolutionScene` now consumes all currently available entries of
+`actions.evolution` through `EvolutionSnapshot`, rather than carrying a list
+of cellular upgrades, genera, species, or challenges. The snapshot exposes
+real visible resources, net resource change, `evolution.final`, actual costs
+from `actionDesc()`, affordability from `checkAffordable()`, `reqs`, grants,
+emblems, and active challenge state.
+
+| Content | Engine source | Graphical coverage | Explicit fallback |
+| --- | --- | --- | --- |
+| RNA/DNA and cellular actions | Initial `actions.evolution` definitions | Generic interactive node and original dispatcher | Classic Evolution cards |
+| Genus decisions and branches | `genus_condition`, `genus_def`, `reqs` and grants | Dynamically discovered after original conditions pass | Classic Evolution cards |
+| Special, extinct, synth, custom and hybrid species | Dynamic entries built from `raceList` / `evoExtraState` | Dynamically discovered after original conditions pass | Original selection/menu flow |
+| Challenge and scenario entries | `challengeList`, `advancedChallengeList`, `setChallengeScreen` | Active state and original action when visible | Original challenge screen |
+| Sentience | `actions.evolution.sentience` then `sentience()` | Final node delegates to the original transition | Classic Sentience action |
+
+The runtime `coverage` matrix iterates every live definition in
+`actions.evolution`. Each one is either a generic executable node or declares
+`classic-hidden-until-available` / `classic-unsupported`; hidden branches are
+not pre-revealed. See [EVOLUTION_SCENE.md](EVOLUTION_SCENE.md).
+
 ## Rutas de acciones clásicas que deben conservarse
 
 | Intención futura | Punto clásico | Integración permitida |

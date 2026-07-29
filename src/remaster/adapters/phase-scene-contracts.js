@@ -4,7 +4,7 @@
  * motor.
  */
 
-export const PHASE_SCENE_CONTRACT_VERSION = 1;
+export const PHASE_SCENE_CONTRACT_VERSION = 2;
 
 /**
  * @typedef {'evolution'|'sentience-transition'|'early-settlement'|'civilization'|'unsupported'} RemasterPhaseKind
@@ -21,7 +21,55 @@ export const PHASE_SCENE_CONTRACT_VERSION = 1;
  * @typedef {Object} EvolutionSnapshot
  * @property {{ id: string, count: number }[]} steps Progreso real de `evolution`.
  * @property {{ id: string, level: number }[]} technologies Progreso `evo*` existente.
+ * @property {{ final: number|null }} progress Valor de progreso del motor, sin reinterpretarlo.
+ * @property {EvolutionResource[]} resources Recursos evolutivos ya formateados por el motor.
+ * @property {EvolutionActionSnapshot[]} actions Acciones visibles que definió el motor.
+ * @property {EvolutionActionCoverage[]} coverage Matriz de cobertura de todas las definiciones del motor.
  * @property {boolean} sentienceReady Resultado de la condición original, no una réplica.
+ */
+
+/**
+ * @typedef {Object} EvolutionResource
+ * @property {string} id Identificador original de recurso.
+ * @property {string} label Nombre localizado preparado por el motor.
+ * @property {string} value Valor ya formateado por el motor.
+ * @property {number} amount Cantidad original.
+ * @property {number|null} max Capacidad original.
+ * @property {number} diff Variación original calculada por el motor.
+ */
+
+/**
+ * @typedef {Object} EvolutionActionSnapshot
+ * @property {string} id Clave estable de `actions.evolution`.
+ * @property {string} actionId Id DOM original de la acción.
+ * @property {string} label Título localizado original.
+ * @property {string} description Descripción original sin HTML.
+ * @property {string} effect Efecto original sin HTML.
+ * @property {{ id: string, level: number }[]} requirements Requisitos originales para composición de conexiones.
+ * @property {{ id: string, level: number|null }|null} grant Grant original cuando existe.
+ * @property {EvolutionActionCost[]} costs Costes actuales calculados por el renderer original.
+ * @property {boolean} affordable Asequibilidad original.
+ * @property {boolean} available La acción superó las comprobaciones originales de visibilidad.
+ * @property {boolean} locked Los nodos visibles no revelan contenido temprano, por eso es falso.
+ * @property {boolean} active Estado original de selección/desafío cuando aplica.
+ * @property {number|null} count Contador original cuando existe.
+ * @property {string} emblem SVG/markup creado por el emblema original cuando existe.
+ * @property {number|null} stage Agrupación visual derivada únicamente de `reqs.evo`.
+ */
+
+/**
+ * @typedef {Object} EvolutionActionCoverage
+ * @property {string} id Stable key from the original definition.
+ * @property {boolean} represented True when the visible action has a generic map node.
+ * @property {boolean} executable True when the bridge can delegate to the original action.
+ * @property {'classic-hidden-until-available'|'classic-unsupported'|null} fallback Explicit classic fallback otherwise.
+ */
+
+/**
+ * @typedef {Object} EvolutionActionCost
+ * @property {string|null} id Recurso/estructura expuesto por el renderer original.
+ * @property {string} text Texto de coste original.
+ * @property {'sufficient'|'warning'|'insufficient'} status Disponibilidad resuelta por el renderer.
  */
 
 /**

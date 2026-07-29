@@ -36,6 +36,44 @@ function getEvolution(gameState, reader) {
     return {
         steps,
         technologies,
+        progress: {
+            final: finiteNumber(reported.progress?.final)
+        },
+        resources: Array.isArray(reported.resources) ? reported.resources.map((resource) => ({
+            id: typeof resource.id === 'string' ? resource.id : '',
+            label: typeof resource.label === 'string' ? resource.label : resource.id,
+            value: typeof resource.value === 'string' ? resource.value : String(resource.amount || 0),
+            amount: finiteNumber(resource.amount, 0),
+            max: finiteNumber(resource.max),
+            diff: finiteNumber(resource.diff, 0)
+        })).filter((resource) => resource.id) : [],
+        actions: Array.isArray(reported.actions) ? reported.actions.map((action) => ({
+            id: typeof action.id === 'string' ? action.id : '',
+            actionId: typeof action.actionId === 'string' ? action.actionId : action.id,
+            label: typeof action.label === 'string' ? action.label : action.id,
+            description: typeof action.description === 'string' ? action.description : '',
+            effect: typeof action.effect === 'string' ? action.effect : '',
+            requirements: Array.isArray(action.requirements) ? action.requirements.map((requirement) => ({ id: requirement.id, level: finiteNumber(requirement.level, 0) })).filter((requirement) => typeof requirement.id === 'string') : [],
+            grant: action.grant && typeof action.grant.id === 'string' ? { id: action.grant.id, level: finiteNumber(action.grant.level) } : null,
+            costs: Array.isArray(action.costs) ? action.costs.map((cost) => ({
+                id: typeof cost.id === 'string' ? cost.id : null,
+                text: typeof cost.text === 'string' ? cost.text : '',
+                status: ['sufficient', 'warning', 'insufficient'].includes(cost.status) ? cost.status : 'sufficient'
+            })) : [],
+            affordable: action.affordable === true,
+            available: action.available === true,
+            locked: action.locked === true,
+            active: action.active === true,
+            count: finiteNumber(action.count),
+            emblem: typeof action.emblem === 'string' ? action.emblem : '',
+            stage: finiteNumber(action.stage)
+        })).filter((action) => action.id) : [],
+        coverage: Array.isArray(reported.coverage) ? reported.coverage.map((entry) => ({
+            id: typeof entry.id === 'string' ? entry.id : '',
+            represented: entry.represented === true,
+            executable: entry.executable === true,
+            fallback: ['classic-hidden-until-available', 'classic-unsupported'].includes(entry.fallback) ? entry.fallback : null
+        })).filter((entry) => entry.id) : [],
         sentienceReady: reported.sentienceReady === true
     };
 }
@@ -92,7 +130,7 @@ function getSettlement(gameState, speciesId) {
 /**
  * @typedef {Object} PhaseEngineReader
  * @property {(gameState: object) => { kind: import('./phase-scene-contracts.js').RemasterPhaseKind, reason?: string }} [readPhase]
- * @property {(gameState: object) => { sentienceReady?: boolean }} [readEvolution]
+ * @property {(gameState: object) => { sentienceReady?: boolean, progress?: object, resources?: object[], actions?: object[], coverage?: object[] }} [readEvolution]
  * @property {(speciesId: string|null, race: object) => { label?: string, type?: string }} [readRace]
  * @property {(city: object, calendar: object) => { biomeLabel?: string }} [readEnvironment]
  * @property {(gameState: object) => import('./town-scene-contracts.js').TownSnapshot} [readCivilization]

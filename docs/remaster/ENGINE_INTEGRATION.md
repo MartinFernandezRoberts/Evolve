@@ -142,6 +142,29 @@ El contrato completo y la tabla de rutas están en
 [`PHASE_ARCHITECTURE.md`](PHASE_ARCHITECTURE.md); la cobertura entre el motor y
 la wiki fuente está en [`WIKI_COVERAGE.md`](WIKI_COVERAGE.md).
 
+## Checkpoint 2: Evolution action bridge
+
+Evolution and the Sentience transition now use the immutable
+`EvolutionSnapshot` inside `RemasterPhaseSnapshot` v2. The authorized reader
+in `src/actions.js` enumerates the live `actions.evolution` definitions and
+resolves their text, descriptions, effect, costs, affordability, requirements,
+grant, count, emblem, resource values, and progress before handing data to
+`src/remaster/`.
+
+`GameActionBridge.executeEvolutionAction(id)` delegates to
+`runVisualEvolutionAction(id)` in `src/actions.js`. That wrapper performs the
+same `checkTechQualifications()` and requirement pass as `drawEvolution()`,
+and then calls `runAction(c_action, 'evolution', id)`. The original action
+retains affordability validation, payment,
+quantity, queue, messages, post-processing, species choice, and Sentience
+effects. The visual code never writes game state directly.
+
+The phase manager samples a visible Evolution scene at most once per second,
+stops while the document is hidden, and removes its timer plus visibility,
+focus, page-show, locale, pointer, wheel, and media-query listeners on cleanup.
+The graph is rebuilt only if its action structure changes. Full details and
+manual parity checks are in [EVOLUTION_SCENE.md](EVOLUTION_SCENE.md).
+
 ## Compatibilidad
 
 - El game loop, balance, recursos, costes, tecnologías y resets no cambian.

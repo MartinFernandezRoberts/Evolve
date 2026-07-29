@@ -3,7 +3,7 @@
  * importa el estado de juego: recibe únicamente las rutas originales que el
  * integrador autoriza y entrega un objeto inmutable a los componentes.
  *
- * @param {{ build?: Function, setPower?: Function, setWorkers?: Function, openClassicPanel?: Function }} operations
+ * @param {{ build?: Function, setPower?: Function, setWorkers?: Function, openClassicPanel?: Function, executeEvolutionAction?: Function }} operations
  */
 export function createGameActionBridge(operations = {}) {
     const invoke = (name, ...args) => {
@@ -15,6 +15,7 @@ export function createGameActionBridge(operations = {}) {
 
     return Object.freeze({
         build: (id, quantity) => invoke('build', id, quantity),
+        executeEvolutionAction: (id) => invoke('executeEvolutionAction', id),
         setPower: (id, enabled) => invoke('setPower', id, enabled),
         setWorkers: (id, job, amount) => invoke('setWorkers', id, job, amount),
         openClassicPanel: (panel) => invoke('openClassicPanel', panel)

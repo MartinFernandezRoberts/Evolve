@@ -20,6 +20,7 @@ import { loadTab, tabLabel } from './index.js';
 import { createGameTownSnapshot } from './remaster/adapters/game-town-adapter.js';
 import { createGameActionBridge } from './remaster/adapters/game-action-bridge.js';
 import { createGamePhaseSnapshot } from './remaster/adapters/game-phase-adapter.js';
+import { createEvolutionCoverageMatrix } from './remaster/adapters/evolution-coverage.js';
 import { getBuildingVisualDefinition } from './remaster/config/building-visual-registry.js';
 import { resolvePhaseRoute } from './remaster/config/phase-routing.js';
 import { getRemasterPreferences, setRemasterView } from './remaster/config/remaster-preferences.js';
@@ -5395,16 +5396,7 @@ export function drawEvolution(){
         if (!actions.evolution[evo]['challenge']){
             removeAction(actions.evolution[evo].id);
 
-            var isMet = true;
-            if (actions.evolution[evo].hasOwnProperty('reqs')){
-                Object.keys(actions.evolution[evo].reqs).forEach(function (req){
-                    if (!global.tech[req] || global.tech[req] < actions.evolution[evo].reqs[req]){
-                        isMet = false;
-                    }
-                });
-            }
-
-            if (isMet){
+            if (evolutionRequirementsMet(actions.evolution[evo])){
                 addAction('evolution', evo);
             }
         }
@@ -6058,6 +6050,90 @@ function getCityActionCostRows(c_action, id){
     return rows;
 }
 
+/** Uses the original action description renderer, so evolution costs never
+ * acquire a second calculation path in the remaster. */
+function getEvolutionActionCostRows(c_action, id){
+    const preview = $('<div></div>');
+    actionDesc(preview,c_action,global.evolution[id],false,'evolution',id);
+    const rows = preview.find('.costList > div').toArray().map((element) => {
+        const row = $(element);
+        const resourceClass = Array.from(element.classList).find((className) => className.startsWith('res-'));
+        const dataAttribute = element.getAttributeNames().find((name) => name.startsWith('data-'));
+        return {
+            id: resourceClass ? resourceClass.slice(4) : (dataAttribute ? dataAttribute.slice(5) : null),
+            text: row.text().trim(),
+            status: row.hasClass('has-text-danger') ? 'insufficient' : (row.hasClass('has-text-alert') ? 'warning' : 'sufficient')
+        };
+    });
+    preview.remove();
+    return rows;
+}
+
+/** The requirement pass is shared with the classic Evolution redraw. */
+function evolutionRequirementsMet(c_action){
+    return !c_action.reqs || Object.keys(c_action.reqs).every((requirement) => (
+        global.tech[requirement] && global.tech[requirement] >= c_action.reqs[requirement]
+    ));
+}
+
+/**
+ * Uses the same original condition and requirement checks that decide whether
+ * `drawEvolution()` creates a classic action. Hidden actions remain hidden;
+ * this is deliberately not a prediction of future branches.
+ */
+function isEvolutionActionAvailable(id, c_action = actions.evolution[id]){
+    return Boolean(c_action && checkTechQualifications(c_action,id) && evolutionRequirementsMet(c_action));
+}
+
+function getEvolutionActionStage(c_action){
+    if (Number.isFinite(c_action.reqs?.evo)){
+        return c_action.reqs.evo;
+    }
+    if (Array.isArray(c_action.grant) && c_action.grant[0] === 'evo' && Number.isFinite(c_action.grant[1])){
+        return Math.max(0,c_action.grant[1] - 1);
+    }
+    return 0;
+}
+
+function getEvolutionActionCount(id, c_action){
+    if (typeof c_action.count === 'function'){
+        return c_action.count();
+    }
+    return Number.isFinite(global.evolution[id]?.count) ? global.evolution[id].count : null;
+}
+
+function getEvolutionVisualAction(id, c_action){
+    const grant = Array.isArray(c_action.grant) && typeof c_action.grant[0] === 'string'
+        ? { id: c_action.grant[0], level: Number.isFinite(c_action.grant[1]) ? c_action.grant[1] : null }
+        : null;
+    const emblem = typeof c_action.emblem === 'function' ? c_action.emblem() : '';
+    return {
+        id,
+        actionId: c_action.id,
+        label: getActionText(c_action,'title') || id,
+        description: getActionText(c_action,'desc'),
+        effect: getActionText(c_action,'effect'),
+        requirements: Object.entries(c_action.reqs || {}).map(([requirement, level]) => ({ id: requirement, level })),
+        grant,
+        costs: getEvolutionActionCostRows(c_action,id),
+        affordable: checkAffordable(c_action,false,false),
+        available: true,
+        locked: false,
+        active: typeof c_action.highlight === 'function' && c_action.highlight() === true,
+        count: getEvolutionActionCount(id,c_action),
+        emblem: typeof emblem === 'string' ? emblem : '',
+        stage: getEvolutionActionStage(c_action)
+    };
+}
+
+function getEvolutionCoverage(){
+    return createEvolutionCoverageMatrix(Object.entries(actions.evolution).map(([id, c_action]) => ({
+        id,
+        visible: isEvolutionActionAvailable(id,c_action),
+        executable: typeof c_action.action === 'function'
+    })));
+}
+
 function getCityVisualWorkers(id){
     const definition = getBuildingVisualDefinition(id);
     if (!definition){
@@ -6165,8 +6241,51 @@ export function openVisualClassicPanel(){
     return { success: true };
 }
 
+/**
+ * Executes an Evolution node through the exact dispatcher used by the classic
+ * action button. Validation reuses the original condition, requirement and
+ * requirement helpers; payments, queues, messages and post-processing stay
+ * inside the original action and `runAction()`.
+ *
+ * @param {string} id Stable `actions.evolution` key from the snapshot.
+ * @returns {{ success: boolean, reason?: string }} Whether the engine state changed.
+ */
+export function runVisualEvolutionAction(id){
+    const c_action = actions.evolution[id];
+    if (!c_action || !isEvolutionActionAvailable(id,c_action) || typeof c_action.action !== 'function'){
+        return { success: false, reason: 'unavailable' };
+    }
+    // The transaction itself owns every mutation. This comparison is only an
+    // acknowledgement for visual feedback; it never supplies a game result.
+    const before = JSON.stringify({
+        evolution: global.evolution,
+        tech: global.tech,
+        race: global.race,
+        resource: global.resource
+    });
+    runAction(c_action,'evolution',id);
+    const changed = before !== JSON.stringify({
+        evolution: global.evolution,
+        tech: global.tech,
+        race: global.race,
+        resource: global.resource
+    });
+
+    // `runAction()` redraws grant actions through postBuild. Resource-only
+    // evolution actions do not grant a technology, so request the original
+    // redraw here after the transaction has completed.
+    if (global.race.species === 'protoplasm'){
+        drawEvolution();
+    }
+    else {
+        drawCity();
+    }
+    return { success: changed };
+}
+
 const cityVisualCommands = createGameActionBridge({
     build: runVisualCityBuild,
+    executeEvolutionAction: runVisualEvolutionAction,
     setPower: setVisualCityPower,
     setWorkers: setVisualCityWorkers,
     openClassicPanel: openVisualClassicPanel
@@ -6350,7 +6469,29 @@ function getRemasterPhaseState(){
 
 function getRemasterEvolutionState(){
     const sentience = actions.evolution.sentience;
-    return { sentienceReady: sentience?.condition?.() === true };
+    const resources = Object.entries(global.resource)
+        .filter(([, resource]) => resource?.display)
+        .map(([id, resource], order) => {
+            const state = getTownResourceState(id,resource,order);
+            return {
+                id,
+                label: state.label,
+                value: state.value,
+                amount: resource.amount,
+                max: resource.max,
+                diff: resource.diff
+            };
+        });
+    const actionsSnapshot = Object.entries(actions.evolution)
+        .filter(([id, c_action]) => isEvolutionActionAvailable(id,c_action))
+        .map(([id, c_action]) => getEvolutionVisualAction(id,c_action));
+    return {
+        sentienceReady: sentience?.condition?.() === true,
+        progress: { final: Number.isFinite(global.evolution.final) ? global.evolution.final : null },
+        resources,
+        actions: actionsSnapshot,
+        coverage: getEvolutionCoverage()
+    };
 }
 
 function getRemasterRaceState(id, raceState){
