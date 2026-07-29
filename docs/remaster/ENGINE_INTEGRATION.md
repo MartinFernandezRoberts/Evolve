@@ -72,6 +72,13 @@ El contrato público `TownSnapshot` se documenta de forma completa en
 `src/remaster/adapters/game-town-adapter.js` a partir de una entrada explícita
 y no conserva referencias al estado que recibe. La escena consume sólo ese DTO.
 
+Para los edificios visuales, `drawCity()` entrega al adaptador un callback fino
+que consulta el título, requisitos, calificaciones y asequibilidad mediante las
+funciones originales. El DTO resultante contiene sólo sus respuestas ya
+resueltas en `visualBuildings`; el registro y los componentes de
+`src/remaster/` no importan el estado del motor. Véase
+[`BUILDING_VISUALS.md`](BUILDING_VISUALS.md).
+
 ## Compatibilidad
 
 - El game loop, balance, recursos, costes, tecnologías y resets no cambian.

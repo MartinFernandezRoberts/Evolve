@@ -1,5 +1,6 @@
 import { isTownSceneSnapshot } from '../adapters/town-scene-contracts.js';
 import { createTownBackdrop } from '../assets/town-art.js';
+import { TownBuildingLayer } from '../components/town-building-layer.js';
 import { createTownNode, updateTownNode, updateTownNodeSelection } from '../components/town-node.js';
 import { renderTownPanel } from '../components/town-panel.js';
 
@@ -35,6 +36,7 @@ export class TownScene {
         this.nodes = [];
         this.nodeById = new Map();
         this.resourceNodes = new Map();
+        this.buildingLayer = new TownBuildingLayer();
         this.structureKey = '';
         this.panelKey = '';
         this.zoom = 1;
@@ -127,6 +129,7 @@ export class TownScene {
         this.world.innerHTML = createTownBackdrop();
         this.nodes = [];
         this.nodeById.clear();
+        this.buildingLayer.reset();
 
         this.snapshot.districts.forEach((district) => {
             const node = createTownNode(district, {
@@ -156,6 +159,7 @@ export class TownScene {
                 updateTownNode(node, district);
             }
         });
+        this.buildingLayer.sync(this.snapshot, this.nodeById);
         updateTownNodeSelection(this.nodes, this.selectedId);
         this.renderSelectedPanel(forcePanel);
     }
@@ -331,5 +335,6 @@ export class TownScene {
         this.nodes = [];
         this.nodeById.clear();
         this.resourceNodes.clear();
+        this.buildingLayer.destroy();
     }
 }

@@ -1,4 +1,5 @@
 import { races, biomes } from '../../races.js';
+import { BUILDING_VISUAL_REGISTRY } from '../config/building-visual-registry.js';
 import { TOWN_DISTRICT_LAYOUT } from '../config/town-layout.js';
 import { TOWN_SCENE_CONTRACT_VERSION } from './town-scene-contracts.js';
 
@@ -74,6 +75,29 @@ function makeDistrict(layout, city) {
 }
 
 /**
+ * @param {object} city
+ * @param {(id: string) => { label?: string, unlocked?: boolean, affordable?: boolean }|undefined} [readVisualBuildingState]
+ * @returns {import('./town-scene-contracts.js').TownVisualBuilding[]}
+ */
+function getVisualBuildings(city, readVisualBuildingState) {
+    return BUILDING_VISUAL_REGISTRY.map((definition) => {
+        const cityState = city[definition.id];
+        const originalState = readVisualBuildingState ? (readVisualBuildingState(definition.id) || {}) : {};
+        const count = Number(cityState?.count || 0);
+
+        return {
+            id: definition.id,
+            district: definition.district,
+            label: typeof originalState.label === 'string' ? originalState.label : humanizeId(definition.id),
+            count,
+            on: typeof cityState?.on === 'number' ? cityState.on : null,
+            unlocked: count > 0 || originalState.unlocked === true,
+            affordable: typeof originalState.affordable === 'boolean' ? originalState.affordable : null
+        };
+    });
+}
+
+/**
  * Transforma un estado real de Evolve en un contrato exclusivamente de lectura.
  *
  * No importa el estado de módulo: el llamador le pasa el objeto actual y el
@@ -81,9 +105,10 @@ function makeDistrict(layout, city) {
  * fórmulas; se limita a seleccionar y presentar valores ya calculados.
  *
  * @param {object} gameState Estado actual de Evolve proporcionado por el integrador.
+ * @param {(id: string) => { label?: string, unlocked?: boolean, affordable?: boolean }|undefined} [readVisualBuildingState] Puente hacia comprobaciones originales del integrador.
  * @returns {import('./town-scene-contracts.js').TownSnapshot}
  */
-export function createGameTownSnapshot(gameState) {
+export function createGameTownSnapshot(gameState, readVisualBuildingState) {
     const speciesId = gameState.race?.species || 'unknown';
     const species = races[speciesId] || {};
     const biomeId = gameState.city?.biome || null;
@@ -94,6 +119,7 @@ export function createGameTownSnapshot(gameState) {
     const government = gameState.civic?.govern || {};
     const resources = getResources(gameState);
     const buildings = getAllBuildings(gameState);
+    const visualBuildings = getVisualBuildings(city, readVisualBuildingState);
 
     return {
         contractVersion: TOWN_SCENE_CONTRACT_VERSION,
@@ -102,6 +128,7 @@ export function createGameTownSnapshot(gameState) {
         subtitle: 'Vista gráfica de Civilización basada en el estado actual de la partida.',
         resources,
         districts: TOWN_DISTRICT_LAYOUT.map((layout) => makeDistrict(layout, city)),
+        visualBuildings,
         context: {
             species: { id: speciesId, label: species.name || humanizeId(speciesId) },
             biome: { id: biomeId, label: biome.label || biomeId },

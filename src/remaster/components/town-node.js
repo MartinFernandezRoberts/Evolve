@@ -34,6 +34,7 @@ export function createTownNode(district, handlers) {
         <title>${escapeMarkup(district.label)}</title>
         <ellipse class="town-node__focus" cx="0" cy="24" rx="100" ry="58" />
         <g filter="url(#town-shadow)">${createDistrictArt(district)}</g>
+        <g class="town-node__building-layer" data-town-building-layer></g>
         <g class="town-node__marker" transform="translate(58 -38)">
             <circle r="18" fill="${district.accent}" />
             <text data-town-marker text-anchor="middle" dominant-baseline="central">${district.marker}</text>

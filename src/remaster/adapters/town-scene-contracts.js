@@ -6,7 +6,7 @@
  * contrato desde una entrada de sólo lectura sin cambiar TownScene.
  */
 
-export const TOWN_SCENE_CONTRACT_VERSION = 1;
+export const TOWN_SCENE_CONTRACT_VERSION = 2;
 
 /**
  * @typedef {'center'|'housing'|'agriculture'|'forest'|'quarry'|'science'|'religion'|'industry'|'government'|'military'} TownDistrictId
@@ -39,6 +39,17 @@ export const TOWN_SCENE_CONTRACT_VERSION = 1;
  * @property {string} label Etiqueta de presentación.
  * @property {number} count Cantidad construida según el estado original.
  * @property {number|null} on Cantidad activa cuando la estructura la define.
+ */
+
+/**
+ * @typedef {Object} TownVisualBuilding
+ * @property {string} id Id original de `actions.city` incluido en el registro visual.
+ * @property {TownDistrictId} district Distrito de presentación declarado.
+ * @property {string} label Nombre localizado por la acción original.
+ * @property {number} count Cantidad construida; nunca determina el número de sprites.
+ * @property {number|null} on Cantidad activa original cuando aplica.
+ * @property {boolean} unlocked Resultado de los requisitos originales.
+ * @property {boolean|null} affordable Resultado de la asequibilidad original si está desbloqueado.
  */
 
 /**
@@ -79,6 +90,7 @@ export const TOWN_SCENE_CONTRACT_VERSION = 1;
  * @property {string} subtitle Texto contextual ya localizado.
  * @property {TownResource[]} resources Datos resumidos de sólo lectura.
  * @property {TownDistrict[]} districts Distritos renderizables.
+ * @property {TownVisualBuilding[]} visualBuildings Edificios reales admitidos por BuildingVisualRegistry.
  * @property {TownSnapshotContext} context Contexto de juego sólo de lectura.
  */
 
@@ -96,6 +108,7 @@ export function isTownSceneSnapshot(snapshot) {
         snapshot.contractVersion === TOWN_SCENE_CONTRACT_VERSION &&
         Array.isArray(snapshot.resources) &&
         Array.isArray(snapshot.districts) &&
+        Array.isArray(snapshot.visualBuildings) &&
         snapshot.context &&
         typeof snapshot.context === 'object'
     );

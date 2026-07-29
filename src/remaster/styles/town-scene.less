@@ -453,6 +453,282 @@
         pointer-events: none;
     }
 
+    .town-node__building-layer {
+        pointer-events: none;
+    }
+
+    .town-node--settled .town-node__building-layer {
+        filter: saturate(1.08);
+    }
+
+    .town-node--dense .town-node__building-layer {
+        filter: saturate(1.16) drop-shadow(0 2px 2px rgba(15, 45, 48, .28));
+    }
+
+    .town-building {
+        transform-box: fill-box;
+        transform-origin: center bottom;
+    }
+
+    .town-building.is-growing {
+        animation: remaster-building-grow .62s cubic-bezier(.2, .9, .3, 1.35);
+    }
+
+    .town-building.is-unlocked {
+        animation: remaster-building-unlock .7s ease-out;
+    }
+
+    .town-building .is-hidden {
+        display: none;
+    }
+
+    .town-building__plot ellipse {
+        fill: rgba(225, 202, 117, .2);
+        stroke: #e6c36d;
+        stroke-dasharray: 6 5;
+        stroke-width: 2;
+    }
+
+    .town-building__plot path {
+        fill: none;
+        stroke: #b79155;
+        stroke-width: 2;
+    }
+
+    .town-building__supply {
+        fill: #d6ad59;
+        stroke: #67483a;
+        stroke-width: 2;
+        animation: remaster-supply-bob 1.8s ease-in-out infinite;
+    }
+
+    .town-building__badge rect {
+        fill: #1f3b40;
+        stroke: #f6dc90;
+        stroke-width: 2;
+    }
+
+    .town-building__badge text {
+        fill: #fff1bc;
+        font-family: "Trebuchet MS", sans-serif;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .town-building__shadow {
+        fill: rgba(15, 55, 54, .5);
+    }
+
+    .town-building__wall,
+    .town-building__temple-wall {
+        fill: #d9b77d;
+        stroke: #6d4d3e;
+        stroke-width: 3;
+    }
+
+    .town-building__industrial-wall {
+        fill: #a97459;
+        stroke: #553f42;
+        stroke-width: 3;
+    }
+
+    .town-building__industrial-wall--cool {
+        fill: #87aeb3;
+    }
+
+    .town-building__roof {
+        fill: #bc604c;
+        stroke: #673f39;
+        stroke-width: 3;
+    }
+
+    .town-building__roof--dark {
+        fill: #665255;
+    }
+
+    .town-building__roof--cool,
+    .town-building__dome {
+        fill: #79bec9;
+        stroke: #376b7b;
+        stroke-width: 3;
+    }
+
+    .town-building__light,
+    .town-building__tower-light {
+        fill: #ffde73;
+        stroke: #8d5f37;
+        stroke-width: 2;
+    }
+
+    .town-building.is-on .town-building__light,
+    .town-building.is-on .town-building__tower-light {
+        filter: drop-shadow(0 0 4px #ffe690);
+    }
+
+    .town-building.is-off [data-building-art] {
+        filter: grayscale(.5) brightness(.62);
+        opacity: .74;
+    }
+
+    .town-building__houselet {
+        fill: #c68058;
+        stroke: #67433a;
+        stroke-width: 2;
+    }
+
+    .town-building__field {
+        fill: #bdd35f;
+        stroke: #668e4b;
+        stroke-width: 3;
+    }
+
+    .town-building__furrows,
+    .town-building__wheel,
+    .town-building__logs,
+    .town-building__log-stack,
+    .town-building__cut,
+    .town-building__crane,
+    .town-building__rails,
+    .town-building__coil,
+    .town-building__reactor-core,
+    .town-building__column {
+        fill: none;
+        stroke: #57433b;
+        stroke-linecap: round;
+        stroke-width: 3;
+    }
+
+    .town-building__wheel,
+    .town-building__machine {
+        animation: remaster-wheel-turn 3.4s linear infinite;
+        transform-box: fill-box;
+        transform-origin: center;
+    }
+
+    .town-building__pine {
+        fill: #2f7c58;
+        stroke: #1c594c;
+        stroke-width: 3;
+    }
+
+    .town-building__trunk {
+        fill: none;
+        stroke: #714735;
+        stroke-width: 6;
+    }
+
+    .town-building__stone,
+    .town-building__rock {
+        fill: #899ca0;
+        stroke: #536f75;
+        stroke-width: 3;
+    }
+
+    .town-building__mine-mouth {
+        fill: #263e47;
+        stroke: #526d72;
+        stroke-width: 3;
+    }
+
+    .town-building__cart,
+    .town-building__ingot,
+    .town-building__machine,
+    .town-building__pipe,
+    .town-building__coolant {
+        fill: #718d8c;
+        stroke: #405d61;
+        stroke-width: 3;
+    }
+
+    .town-building__book,
+    .town-building__booklet {
+        fill: #74c9d1;
+        stroke: #3b7580;
+        stroke-width: 2;
+    }
+
+    .town-building__beacon,
+    .town-building__reactor {
+        fill: #8fd6d5;
+        stroke: #3f7f83;
+        stroke-width: 3;
+    }
+
+    .town-building.is-on .town-building__beacon,
+    .town-building.is-on .town-building__reactor {
+        animation: remaster-beacon-pulse 2.2s ease-in-out infinite;
+        transform-box: fill-box;
+        transform-origin: center;
+    }
+
+    .town-building__temple-roof,
+    .town-building__banner {
+        fill: #c78ae2;
+        stroke: #65466f;
+        stroke-width: 3;
+    }
+
+    .town-building__banner {
+        animation: remaster-flag 2.6s ease-in-out infinite;
+        transform-box: fill-box;
+        transform-origin: left center;
+    }
+
+    .town-building__shrine,
+    .town-building__annex,
+    .town-building__barracks {
+        fill: #a88271;
+        stroke: #604942;
+        stroke-width: 3;
+    }
+
+    .town-building__battlements,
+    .town-building__patrol {
+        fill: none;
+        stroke: #4d5860;
+        stroke-linecap: round;
+        stroke-width: 3;
+    }
+
+    .town-building__patrol {
+        animation: remaster-patrol-step 2s ease-in-out infinite;
+    }
+
+    .town-building__chimney {
+        fill: #687178;
+        stroke: #434b55;
+        stroke-width: 3;
+    }
+
+    .town-building__furnace {
+        fill: #5f4741;
+        stroke: #3d3539;
+        stroke-width: 3;
+    }
+
+    .town-building.is-on .town-building__furnace {
+        filter: drop-shadow(0 0 5px #f29b4e);
+    }
+
+    .town-building__smoke {
+        fill: none;
+        stroke: rgba(223, 232, 216, .74);
+        stroke-linecap: round;
+        stroke-width: 8;
+        animation: remaster-smoke 3.2s ease-in-out infinite;
+    }
+
+    .town-building.is-off .town-building__smoke {
+        opacity: .12;
+        animation-play-state: paused;
+    }
+
+    .town-building__crate {
+        fill: #c99557;
+        stroke: #67483a;
+        stroke-width: 2;
+    }
+
     .town-art__shadow {
         fill: rgba(17, 56, 58, .5);
     }
@@ -541,6 +817,33 @@
 
     @keyframes remaster-smoke {
         50% { opacity: .45; transform: translate(-5px, -9px); }
+    }
+
+    @keyframes remaster-building-grow {
+        0% { opacity: .45; filter: brightness(1.7); }
+        100% { opacity: 1; filter: brightness(1); }
+    }
+
+    @keyframes remaster-building-unlock {
+        0% { filter: brightness(1); }
+        35% { filter: brightness(1.75) drop-shadow(0 0 9px #ffe490); }
+        100% { filter: brightness(1); }
+    }
+
+    @keyframes remaster-supply-bob {
+        50% { transform: translateY(-4px); }
+    }
+
+    @keyframes remaster-wheel-turn {
+        to { transform: rotate(360deg); }
+    }
+
+    @keyframes remaster-beacon-pulse {
+        50% { filter: drop-shadow(0 0 6px #b8ffff); opacity: .78; }
+    }
+
+    @keyframes remaster-patrol-step {
+        50% { opacity: .45; }
     }
 
     @media (max-width: 1180px) {

@@ -6013,6 +6013,30 @@ export function gainTech(action){
 }
 
 export var cLabels = global.settings['cLabels'];
+
+/**
+ * Puente de integración para el remaster. Reutiliza exactamente las
+ * comprobaciones y el título de la acción existente, sin trasladar fórmulas a
+ * la capa visual. El adaptador recibe esta función y nunca importa estado del
+ * juego por sí mismo.
+ *
+ * @param {string} id Id de una acción de ciudad existente.
+ * @returns {{ label: string, unlocked: boolean, affordable: boolean|null }}
+ */
+function getCityVisualBuildingState(id){
+    const action = actions.city[id];
+    if (!action){
+        return { label: id, unlocked: false, affordable: null };
+    }
+    const unlocked = checkCityRequirements(id) && checkTechQualifications(action,id);
+    const label = typeof action.title === 'function' ? action.title() : action.title;
+    return {
+        label: typeof label === 'string' ? label : id,
+        unlocked,
+        affordable: unlocked ? checkAffordable(action,false,false) : null
+    };
+}
+
 export function drawCity(){
     if (!global.settings.tabLoad && (global.settings.civTabs !== 1 || global.settings.spaceTabs !== 0)){
         destroyTownScene();
@@ -6085,7 +6109,7 @@ export function drawCity(){
         host: document.getElementById('city'),
         enabled: global.settings.visualRemaster,
         view: global.settings.visualRemasterView,
-        readSnapshot: () => createGameTownSnapshot(global),
+        readSnapshot: () => createGameTownSnapshot(global, getCityVisualBuildingState),
         onViewChange(view){
             global.settings.visualRemasterView = view;
             drawCity();

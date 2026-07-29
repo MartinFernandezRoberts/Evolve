@@ -4,7 +4,7 @@
 
 `TownSnapshot` es el límite de sólo lectura entre Evolve y la escena visual de
 Civilización. Se define con JSDoc en
-`src/remaster/adapters/town-scene-contracts.js`; su versión actual es `1`.
+`src/remaster/adapters/town-scene-contracts.js`; su versión actual es `2`.
 `TownScene` y sus componentes no importan ni acceden a `global`.
 
 El único productor de juego es
@@ -22,6 +22,7 @@ producción, requisitos, asequibilidad ni escrituras.
 | `title`, `subtitle` | Encabezado de la vista. | HUD de la escena. |
 | `resources` | Recursos visibles con `id`, etiqueta, valor formateado, `amount`, `max` y `diff`. | Hasta seis fichas de recursos. |
 | `districts` | Diez distritos con posición y arte SVG propios, contador y edificios agrupados. | Nodos, marcas y panel lateral. |
+| `visualBuildings` | Edificios reales del registro con nombre localizado, cantidad, `on`, desbloqueo y asequibilidad originales. | Edificio SVG, parcela disponible, estado y contador. |
 | `context.species` | Id y nombre de especie. | Temas y paneles posteriores. |
 | `context.biome` | Id y nombre del bioma. | Tema ambiental posterior. |
 | `context.planet` | Planeta de origen mostrado por la raza. | Contexto de escena posterior. |
@@ -38,6 +39,11 @@ producción, requisitos, asequibilidad ni escrituras.
 coordenadas, colores y variantes de arte de cada distrito vienen de
 `src/remaster/config/town-layout.js`; son presentación estática y no se guardan
 en la partida.
+
+`visualBuildings` se limita a ids incluidos en `BuildingVisualRegistry`. El
+adaptador recibe desde la integración los resultados de las comprobaciones
+originales para `unlocked`, `affordable` y el `label`; no vuelve a expresar esas
+reglas en la escena.
 
 ## Frecuencia y actualización
 

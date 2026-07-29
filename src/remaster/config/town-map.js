@@ -141,6 +141,22 @@ export function createMockTownSnapshot() {
             position: { ...district.position },
             buildings: []
         })),
+        visualBuildings: [
+            { id: 'basic_housing', district: 'housing', label: 'Viviendas de muestra', count: 7, on: null, unlocked: true, affordable: true },
+            { id: 'farm', district: 'agriculture', label: 'Granja de muestra', count: 4, on: null, unlocked: true, affordable: true },
+            { id: 'lumber_yard', district: 'forest', label: 'Aserradero de muestra', count: 2, on: null, unlocked: true, affordable: true },
+            { id: 'rock_quarry', district: 'quarry', label: 'Cantera de muestra', count: 3, on: 3, unlocked: true, affordable: true },
+            { id: 'mine', district: 'quarry', label: 'Mina de muestra', count: 1, on: 0, unlocked: true, affordable: true },
+            { id: 'library', district: 'science', label: 'Biblioteca de muestra', count: 2, on: null, unlocked: true, affordable: true },
+            { id: 'university', district: 'science', label: 'Universidad disponible', count: 0, on: null, unlocked: true, affordable: false },
+            { id: 'temple', district: 'religion', label: 'Templo de muestra', count: 1, on: null, unlocked: true, affordable: true },
+            { id: 'garrison', district: 'military', label: 'Cuartel de muestra', count: 2, on: 2, unlocked: true, affordable: true },
+            { id: 'foundry', district: 'industry', label: 'Fundición de muestra', count: 3, on: 2, unlocked: true, affordable: true },
+            { id: 'factory', district: 'industry', label: 'Fábrica de muestra', count: 1, on: 0, unlocked: true, affordable: true },
+            { id: 'coal_power', district: 'industry', label: 'Central de carbón', count: 1, on: 1, unlocked: true, affordable: true },
+            { id: 'oil_power', district: 'industry', label: 'Central de petróleo bloqueada', count: 0, on: 0, unlocked: false, affordable: null },
+            { id: 'fission_power', district: 'industry', label: 'Central de fisión bloqueada', count: 0, on: 0, unlocked: false, affordable: null }
+        ],
         context: {
             species: { id: 'mock', label: 'Muestra' },
             biome: { id: 'grassland', label: 'Pradera' },
