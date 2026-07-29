@@ -4,7 +4,7 @@
 
 `TownSnapshot` es el límite de sólo lectura entre Evolve y la escena visual de
 Civilización. Se define con JSDoc en
-`src/remaster/adapters/town-scene-contracts.js`; su versión actual es `3`.
+`src/remaster/adapters/town-scene-contracts.js`; su versión actual es `4`.
 `TownScene` y sus componentes no importan ni acceden a `global`.
 
 El único productor de juego es
@@ -37,6 +37,7 @@ producción, requisitos, asequibilidad ni escrituras.
 | `context.energy` | Energía disponible, generada, consumida y bandera `powered` desde el helper compartido del juego. | Estado visual y panel. |
 | `context.morale` | Moral actual y potencial. | Estado visual posterior. |
 | `context.government` | Id y etiqueta de gobierno. | Distrito de gobierno posterior. |
+| `context.visual` | `TownVisualProfile` compuesto por el adaptador desde definiciones del motor y datos ya presentes en el snapshot. | Arquitectura, residentes, bioma, era, clima, agua y overlays planetarios; sólo presentación. |
 
 `TownDistrict.buildings` es una vista agrupada de `context.buildings`. Las
 coordenadas, colores y variantes de arte de cada distrito vienen de
@@ -51,6 +52,12 @@ guardia e industria se habilitan mediante trabajadores o edificios ya presentes.
 No hay una lista de habitantes ni se calcula producción en la escena.
 `calendar.day` no aporta una hora o fase diurna fiable; por ello no se inventa
 un ciclo de día/noche.
+
+`context.visual` no se lee del guardado ni añade una regla. El adaptador crea el
+perfil al recorrer `genus_def`, `races`, `biomes` y `planetTraits`, y el
+componente consume ese resultado inmutable sin importar esas definiciones ni
+consultar `global`. La composición completa y sus fallbacks están documentados
+en [`RACE_VISUAL_PROFILES.md`](RACE_VISUAL_PROFILES.md).
 
 `visualBuildings` se limita a ids incluidos en `BuildingVisualRegistry`. El
 adaptador recibe desde la integración los resultados de las comprobaciones y

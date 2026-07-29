@@ -1,7 +1,27 @@
-import { races, biomes } from '../../races.js';
+import { races, biomes, genus_def, planetTraits } from '../../races.js';
 import { BUILDING_VISUAL_REGISTRY } from '../config/building-visual-registry.js';
 import { TOWN_DISTRICT_LAYOUT } from '../config/town-layout.js';
+import { createTownVisualProfileCatalog, resolveTownVisualProfile } from '../config/town-visual-profiles.js';
 import { TOWN_SCENE_CONTRACT_VERSION } from './town-scene-contracts.js';
+import { createVisualProfileCoverageFixtures } from './visual-profile-coverage.js';
+
+// Sólo definiciones estáticas del motor: nunca estado ni reglas de juego.
+const engineTownVisualProfileCatalog = createTownVisualProfileCatalog({
+    genera: genus_def,
+    species: races,
+    biomes,
+    planetTraits
+});
+
+/** Fixtures de auditoría generadas desde todas las definiciones cargadas. */
+export function createGameTownVisualProfileCoverage() {
+    return createVisualProfileCoverageFixtures({
+        genera: genus_def,
+        species: races,
+        biomes,
+        planetTraits
+    });
+}
 
 function finiteNumber(value, fallback = null) {
     return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
@@ -205,7 +225,7 @@ export function createGameTownSnapshot(gameState, engineReader = {}) {
     const buildings = getAllBuildings(gameState, engineReader);
     const visualBuildings = getVisualBuildings(city, engineReader);
 
-    return freezeSnapshot({
+    const snapshot = {
         contractVersion: TOWN_SCENE_CONTRACT_VERSION,
         source: 'engine',
         title: typeof contextPresentation.title === 'string' ? contextPresentation.title : 'Civilization',
@@ -248,5 +268,7 @@ export function createGameTownSnapshot(gameState, engineReader = {}) {
                 label: typeof contextPresentation.governmentLabel === 'string' ? contextPresentation.governmentLabel : (government.type || null)
             }
         }
-    });
+    };
+    snapshot.context.visual = resolveTownVisualProfile(snapshot, engineTownVisualProfileCatalog);
+    return freezeSnapshot(snapshot);
 }

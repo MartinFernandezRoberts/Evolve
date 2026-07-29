@@ -6,7 +6,7 @@
  * contrato desde una entrada de sólo lectura sin cambiar TownScene.
  */
 
-export const TOWN_SCENE_CONTRACT_VERSION = 3;
+export const TOWN_SCENE_CONTRACT_VERSION = 4;
 
 /**
  * @typedef {'center'|'housing'|'agriculture'|'forest'|'quarry'|'science'|'religion'|'industry'|'government'|'military'} TownDistrictId
@@ -137,6 +137,7 @@ export const TOWN_SCENE_CONTRACT_VERSION = 3;
  * @property {{ available: number|null, generated?: number|null, consumed?: number|null, powered: boolean|null }} energy Estado de energía original disponible.
  * @property {{ current: number|null, potential: number|null }} morale Moral original.
  * @property {{ id: string|null, label: string|null }} government Gobierno actual.
+ * @property {import('../config/town-visual-profiles.js').TownVisualProfile} visual Perfil compuesto de sólo apariencia, construido por el adaptador desde definiciones y estado ya expuesto.
  */
 
 /**
@@ -177,6 +178,8 @@ export function isTownSceneSnapshot(snapshot) {
         Array.isArray(snapshot.districts) &&
         Array.isArray(snapshot.visualBuildings) &&
         snapshot.context &&
-        typeof snapshot.context === 'object'
+        typeof snapshot.context === 'object' &&
+        snapshot.context.visual &&
+        typeof snapshot.context.visual === 'object'
     );
 }

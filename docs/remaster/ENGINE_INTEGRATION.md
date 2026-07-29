@@ -133,7 +133,7 @@ creación de raza/planeta, selección semillada, Big Bang y fases no cubiertas
 devuelven `UnsupportedPhaseScene`, que no monta UI y deja el clásico operativo.
 
 `CivilizationTownScene` es un adaptador del `TownSceneManager` existente, por
-lo que conserva el `TownSnapshot` v3, el muestreo limitado, la limpieza y el
+lo que conserva el `TownSnapshot` v4, el muestreo limitado, la limpieza y el
 `GameActionBridge`. Evolution, transición y asentamiento son sólo lectura en
 esta entrega; cualquier acción futura deberá añadir un método delegado al
 puente, no mutar `global` desde una escena.
@@ -141,6 +141,20 @@ puente, no mutar `global` desde una escena.
 El contrato completo y la tabla de rutas están en
 [`PHASE_ARCHITECTURE.md`](PHASE_ARCHITECTURE.md); la cobertura entre el motor y
 la wiki fuente está en [`WIKI_COVERAGE.md`](WIKI_COVERAGE.md).
+
+## Checkpoint 3: composición visual derivada de raza y planeta
+
+El adaptador de ciudad construye una vez un catálogo visual desde las
+definiciones originales `genus_def`, `races`, `biomes` y `planetTraits`. Para
+cada `TownSnapshot` v4 inserta un `context.visual` inmutable con el resultado
+de la composición de raza, bioma, era tecnológica, estación, clima, rasgos y
+edificios ya presentes. No se lee ni escribe `global` desde `src/remaster/`.
+
+Las excepciones de especie son estrictamente decorativas y los ids nuevos usan
+fallback genérico. El SVG de entorno y los residentes se actualizan por clases
+en el muestreo existente de un segundo; no se crea un mapa por especie, un
+segundo game loop ni estado adicional de guardado. Véase
+[`RACE_VISUAL_PROFILES.md`](RACE_VISUAL_PROFILES.md).
 
 ## Checkpoint 2: Evolution action bridge
 

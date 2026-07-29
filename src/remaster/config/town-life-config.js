@@ -3,26 +3,12 @@
  * se ocultan por rango para que la población del motor nunca se traduzca en
  * cientos de nodos DOM.
  */
+import { getRaceVisualProfile } from './town-visual-profiles.js';
+
 export const TOWN_LIFE_BUDGET = Object.freeze({
     normal: Object.freeze({ residents: 8, activities: 6, weatherParticles: 12 }),
     lowPower: Object.freeze({ residents: 4, activities: 3, weatherParticles: 4 }),
     reducedMotion: Object.freeze({ residents: 0, activities: 0, weatherParticles: 0 })
-});
-
-const architectureProfiles = Object.freeze({
-    aquatic: Object.freeze({ key: 'aquatic', label: 'acuática' }),
-    carnivore: Object.freeze({ key: 'mammalian', label: 'mamífera' }),
-    insectoid: Object.freeze({ key: 'arthropod', label: 'artrópoda' }),
-    avian: Object.freeze({ key: 'avian', label: 'aviar' }),
-    reptilian: Object.freeze({ key: 'reptilian', label: 'reptiliana' }),
-    humanoid: Object.freeze({ key: 'humanoid', label: 'humanoide' }),
-    other: Object.freeze({ key: 'other', label: 'adaptable' })
-});
-
-// Las excepciones por especie conservan un perfil declarativo sin introducir
-// lógica de raza en los componentes de escena.
-const speciesArchitectureProfiles = Object.freeze({
-    octigoran: Object.freeze({ key: 'aquatic', label: 'octigorana', variant: 'octigoran' })
 });
 
 export const TOWN_ACTIVITY_SLOTS = Object.freeze([
@@ -45,9 +31,20 @@ export const TOWN_RESIDENT_SLOTS = Object.freeze([
     Object.freeze({ x: 910, y: 512, route: 'a' })
 ]);
 
-/** @param {{ type?: string }|null|undefined} species */
+/**
+ * Alias de compatibilidad para consumidores de vida anteriores. La fuente de
+ * verdad de arquitectura y excepciones vive ahora en el registro derivado de
+ * definiciones del motor; este helper no mantiene una lista de razas.
+ *
+ * @param {{ id?: string, type?: string }|null|undefined} species
+ */
 export function getSpeciesArchitectureProfile(species) {
-    return speciesArchitectureProfiles[species?.id] || architectureProfiles[species?.type] || architectureProfiles.other;
+    const profile = getRaceVisualProfile(species);
+    return Object.freeze({
+        key: profile.architecture,
+        label: profile.culture,
+        variant: profile.variant || null
+    });
 }
 
 /** La cantidad visible se obtiene por rangos decorativos, no por individuo. */

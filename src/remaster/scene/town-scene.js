@@ -7,6 +7,7 @@ import { TownEnvironmentLayer } from '../components/town-environment-layer.js';
 import { TownLifeLayer } from '../components/town-life-layer.js';
 import { createTownNode, updateTownNode, updateTownNodeSelection } from '../components/town-node.js';
 import { renderTownPanel } from '../components/town-panel.js';
+import { resolveTownVisualProfile } from '../config/town-visual-profiles.js';
 import { resolveSettlementVisualProgression } from '../config/visual-progression.js';
 
 const minimumZoom = 0.65;
@@ -79,6 +80,7 @@ export class TownScene {
         this.reducedMotionQuery = null;
         this.metricsEnabled = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('remasterMetrics');
         this.metrics = { updateMs: 0, nodeCount: 0, heapMb: null };
+        this.visualProfile = null;
     }
 
     mount() {
@@ -220,10 +222,16 @@ export class TownScene {
         });
         this.buildingLayer.sync(this.snapshot, this.nodeById);
         const progression = resolveSettlementVisualProgression(this.snapshot);
+        const visualProfile = this.snapshot.context.visual || resolveTownVisualProfile(this.snapshot);
+        this.visualProfile = visualProfile;
         this.sceneElement.dataset.townGrowth = progression.id;
-        const architecture = this.environmentLayer.sync(this.snapshot);
-        this.sceneElement.dataset.townArchitecture = architecture;
-        this.lifeLayer.sync(this.snapshot);
+        this.sceneElement.dataset.townArchitecture = visualProfile.race.architecture;
+        this.sceneElement.dataset.townBiome = visualProfile.biome.art;
+        this.sceneElement.dataset.townEra = visualProfile.technologyEra.id;
+        this.sceneElement.dataset.townCulture = visualProfile.race.culture;
+        this.sceneElement.dataset.townVariant = visualProfile.race.variant || '';
+        this.environmentLayer.sync(visualProfile);
+        this.lifeLayer.sync(this.snapshot, visualProfile);
         this.applyMotionState();
         updateTownNodeSelection(this.nodes, this.selectedId);
         this.renderSelectedPanel(forcePanel);

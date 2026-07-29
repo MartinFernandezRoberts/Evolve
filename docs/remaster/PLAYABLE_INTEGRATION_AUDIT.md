@@ -53,7 +53,7 @@ oculta, `prefers-reduced-motion` y equipos modestos.
 
 ## Correcciones aplicadas tras la auditoría
 
-- `TownSnapshot` pasó a contrato 3 y se congela en profundidad. Su lector de
+- `TownSnapshot` pasó a contrato 4 y se congela en profundidad. Su lector de
   motor entrega recursos en el orden de la UI original, textos de `loc()`,
   trabajo/descripciones del módulo de empleos, tecnologías, energía agregada,
   bloqueo, costes, cola y recursos faltantes ya resueltos.

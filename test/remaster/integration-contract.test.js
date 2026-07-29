@@ -6,9 +6,11 @@ import { createGameActionBridge } from '../../src/remaster/adapters/game-action-
 import { createEvolutionCoverageMatrix, hasCompleteEvolutionCoverage } from '../../src/remaster/adapters/evolution-coverage.js';
 import { createGamePhaseSnapshot } from '../../src/remaster/adapters/game-phase-adapter.js';
 import { captureTownActionParityState, captureTownSaveParityState, compareTownActionParity } from '../../src/remaster/adapters/town-action-parity-harness.js';
+import { createVisualProfileCoverageFixtures, hasCompleteVisualProfileCoverage } from '../../src/remaster/adapters/visual-profile-coverage.js';
 import { getRemasterPreferences, migrateLegacyRemasterPreferences, setRemasterEnabled, setRemasterView } from '../../src/remaster/config/remaster-preferences.js';
 import { resolvePhaseRoute } from '../../src/remaster/config/phase-routing.js';
 import { resolveSettlementVisualProgression } from '../../src/remaster/config/visual-progression.js';
+import { createTownVisualProfileCatalog, resolveTownVisualProfile } from '../../src/remaster/config/town-visual-profiles.js';
 import { getPopulationVisualCount, getSpeciesArchitectureProfile } from '../../src/remaster/config/town-life-config.js';
 import { KenneyTownAssets } from '../../src/remaster/assets/kenney-assets.js';
 
@@ -161,6 +163,42 @@ function testVisualScenarioHelpers() {
     assert.equal(getSpeciesArchitectureProfile({ type: 'aquatic' }).key, 'aquatic');
 }
 
+function testVisualProfileRegistriesCoverInjectedEngineDefinitions() {
+    const definitions = {
+        genera: { humanoid: {}, aquatic: {}, future: {} },
+        species: { human: { type: 'humanoid' }, octigoran: { type: 'aquatic' }, futureling: { type: 'future' } },
+        biomes: { grassland: {}, desert: {}, future_biome: {} },
+        planetTraits: { toxic: {}, stormy: {}, future_trait: {} }
+    };
+    const fixtures = createVisualProfileCoverageFixtures(definitions);
+    assert.equal(fixtures.genera.length, Object.keys(definitions.genera).length);
+    assert.equal(fixtures.species.length, Object.keys(definitions.species).length);
+    assert.equal(fixtures.biomes.length, Object.keys(definitions.biomes).length);
+    assert.equal(fixtures.planetOverlays.length, Object.keys(definitions.planetTraits).length);
+    assert.equal(hasCompleteVisualProfileCoverage(fixtures), true);
+    assert.equal(fixtures.species.find((entry) => entry.race === 'octigoran').architecture, 'aquatic');
+    assert.equal(fixtures.representative.waterways, 'channels');
+    assert.equal(fixtures.fallback.fallback, true);
+    assert.equal(fixtures.reset.fallback, true);
+
+    const snapshot = Object.freeze({
+        context: Object.freeze({
+            species: Object.freeze({ id: 'octigoran', type: 'aquatic' }),
+            biome: Object.freeze({ id: 'desert' }),
+            environment: Object.freeze({ season: 2, weather: 1, temperature: 1, wind: 0, planetTraits: Object.freeze(['stormy']) }),
+            technologies: Object.freeze([{ id: 'steel', era: 'industrialized' }])
+        }),
+        visualBuildings: Object.freeze([])
+    });
+    const before = JSON.stringify(snapshot);
+    const profile = resolveTownVisualProfile(snapshot, createTownVisualProfileCatalog(definitions));
+    assert.equal(profile.race.variant, 'octigoran');
+    assert.equal(profile.biome.art, 'desert');
+    assert.equal(profile.technologyEra.id, 'industrialized');
+    assert.equal(profile.planetOverlays[0].art, 'storm');
+    assert.equal(JSON.stringify(snapshot), before);
+}
+
 function testCuratedAssetsUseLocalBuildPaths() {
     assert.equal(Object.values(KenneyTownAssets).every((asset) => asset.startsWith('evolve/remaster-assets/kenney/')), true);
 }
@@ -181,7 +219,7 @@ function testPhaseSnapshotsAreFrozenAndDoNotRequireGlobal() {
         resource: { octigoran: { amount: 4, max: 10 } },
         city: { biome: 'oceanic', ptrait: ['stormy'], calendar: { season: 1, weather: 2, temp: 1, wind: 0, day: 3 }, farm: { count: 1 } }
     };
-    const town = Object.freeze({ contractVersion: 3, source: 'engine' });
+    const town = Object.freeze({ contractVersion: 4, source: 'engine' });
     const snapshot = createGamePhaseSnapshot(state, {
         readPhase: () => ({ kind: 'civilization' }),
         readEvolution: () => ({
@@ -254,6 +292,7 @@ testParityReducers();
 testMockImportBuildGuard();
 testVisualProgressionUsesOnlySnapshotSignals();
 testVisualScenarioHelpers();
+testVisualProfileRegistriesCoverInjectedEngineDefinitions();
 testCuratedAssetsUseLocalBuildPaths();
 testPhaseRouterUsesOnlyResolvedSignals();
 testPhaseSnapshotsAreFrozenAndDoNotRequireGlobal();

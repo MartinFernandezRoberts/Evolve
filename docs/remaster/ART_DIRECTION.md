@@ -39,6 +39,13 @@ Es inspiración de lenguaje visual general, no una recreación de una obra concr
 - Las especies acuáticas usan canales, estanques, detalles húmedos y figuras abstractas. Octigoran recibe una variante de canales más amplios y tentáculos SVG originales, nunca personajes o sprites derivados de terceros.
 - Estación, clima y rasgos planetarios sólo tintan, velan o decoran la escena usando los códigos ya presentes en el snapshot. No se deduce una hora del día cuando el motor no la expone.
 
+La cobertura de familia se amplía de forma derivada para humanoides,
+mamíferos, pequeños, gigantes, reptiles, aves, artrópodos, acuáticos, plantas,
+fungi, sintéticos, térmicos, polares, desérticos y grupos especiales. Una raza
+acuática conserva canales incluso sobre dunas: el bioma aporta terreno, agua,
+vegetación y paleta, mientras la raza aporta arquitectura y habitantes. Los
+detalles están en [`RACE_VISUAL_PROFILES.md`](RACE_VISUAL_PROFILES.md).
+
 ## Producción de assets
 
 - Priorizar composiciÃ³n SVG/CSS original sobre un subconjunto local de tiles CC0 curados de Kenney. No se cargan packs ni URLs externas en tiempo de ejecuciÃ³n; las fuentes, licencias y checksums viven en `assets/kenney/` y se describen en `ASSET_PIPELINE.md`.

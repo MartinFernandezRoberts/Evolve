@@ -1190,6 +1190,7 @@
 
     .town-environment__weather,
     .town-environment__aquatic,
+    .town-environment__biome,
     .town-environment__trait {
         display: none;
     }
@@ -1268,7 +1269,7 @@
         animation-delay: -.8s;
     }
 
-    .town-environment.is-aquatic .town-environment__aquatic {
+    .town-environment.is-waterways-channels .town-environment__aquatic {
         display: inline;
     }
 
@@ -1305,21 +1306,83 @@
         stroke-width: 5;
     }
 
-    .town-environment.is-octigoran .town-environment__canal {
+    .town-environment[data-town-variant="octigoran"] .town-environment__canal {
         stroke: #5ecfc7;
         stroke-width: 27;
     }
 
-    .town-environment.is-octigoran .town-environment__pool {
+    .town-environment[data-town-variant="octigoran"] .town-environment__pool {
         fill: #56b9d0;
         stroke: #b7f4db;
     }
 
-    .town-environment.has-trait-toxic .town-environment__trait--toxic,
-    .town-environment.has-trait-magnetic .town-environment__trait--magnetic,
-    .town-environment.has-trait-permafrost .town-environment__trait--permafrost,
-    .town-environment.has-trait-stormy .town-environment__trait--stormy {
+    .town-environment.is-biome-grassland .town-environment__biome--grassland,
+    .town-environment.is-biome-oceanic .town-environment__biome--oceanic,
+    .town-environment.is-biome-forest .town-environment__biome--forest,
+    .town-environment.is-biome-desert .town-environment__biome--desert,
+    .town-environment.is-biome-volcanic .town-environment__biome--volcanic,
+    .town-environment.is-biome-tundra .town-environment__biome--tundra,
+    .town-environment.is-biome-savanna .town-environment__biome--savanna,
+    .town-environment.is-biome-swamp .town-environment__biome--swamp,
+    .town-environment.is-biome-ashland .town-environment__biome--ashland,
+    .town-environment.is-biome-taiga .town-environment__biome--taiga,
+    .town-environment.is-biome-hellscape .town-environment__biome--hellscape,
+    .town-environment.is-biome-eden .town-environment__biome--eden,
+    .town-environment.has-overlay-toxic .town-environment__trait--toxic,
+    .town-environment.has-overlay-bloom .town-environment__trait--bloom,
+    .town-environment.has-overlay-ember .town-environment__trait--ember,
+    .town-environment.has-overlay-storm .town-environment__trait--storm,
+    .town-environment.has-overlay-halo .town-environment__trait--halo,
+    .town-environment.has-overlay-magnetic .town-environment__trait--magnetic,
+    .town-environment.has-overlay-debris .town-environment__trait--debris,
+    .town-environment.has-overlay-rings .town-environment__trait--rings,
+    .town-environment.has-overlay-flare .town-environment__trait--flare,
+    .town-environment.has-overlay-crystal .town-environment__trait--crystal,
+    .town-environment.has-overlay-rift .town-environment__trait--rift,
+    .town-environment.has-overlay-frost .town-environment__trait--frost,
+    .town-environment.has-overlay-orbit .town-environment__trait--orbit,
+    .town-environment.has-overlay-meteor .town-environment__trait--meteor {
         display: inline;
+    }
+
+    .town-environment__biome path,
+    .town-environment__biome circle,
+    .town-environment__biome ellipse {
+        fill: none;
+        stroke: rgba(233, 243, 192, .52);
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 8;
+    }
+
+    .town-environment__biome--forest circle,
+    .town-environment__biome--swamp ellipse,
+    .town-environment__biome--eden circle {
+        fill: rgba(102, 175, 89, .45);
+    }
+
+    .town-environment__biome--desert path,
+    .town-environment__biome--savanna path {
+        stroke: rgba(238, 190, 102, .64);
+    }
+
+    .town-environment__biome--volcanic path,
+    .town-environment__biome--hellscape path {
+        stroke: rgba(231, 113, 68, .72);
+    }
+
+    .town-environment__biome--tundra path,
+    .town-environment__biome--taiga path {
+        stroke: rgba(220, 241, 246, .7);
+    }
+
+    .town-environment__biome--ashland path {
+        stroke: rgba(171, 177, 176, .68);
+    }
+
+    .town-environment__biome--oceanic path {
+        stroke: rgba(151, 233, 229, .74);
+        stroke-width: 11;
     }
 
     .town-environment__trait--toxic {
@@ -1338,19 +1401,59 @@
         animation: remaster-magnetic-arc 2.8s ease-in-out infinite;
     }
 
-    .town-environment__trait--permafrost {
+    .town-environment__trait--frost {
         fill: none;
         stroke: #d7f3f5;
         stroke-linecap: round;
         stroke-width: 9;
     }
 
-    .town-environment__trait--stormy {
+    .town-environment__trait--storm {
         fill: none;
         stroke: #ffe071;
         stroke-linejoin: round;
         stroke-width: 7;
         animation: remaster-lightning-flash 2.4s steps(2, end) infinite;
+    }
+
+    .town-environment__trait--bloom,
+    .town-environment__trait--halo {
+        fill: none;
+        stroke: #d4ed91;
+        stroke-linecap: round;
+        stroke-width: 8;
+    }
+
+    .town-environment__trait--ember,
+    .town-environment__trait--flare,
+    .town-environment__trait--meteor {
+        fill: none;
+        stroke: #f49b58;
+        stroke-linecap: round;
+        stroke-width: 8;
+        animation: remaster-lightning-flash 2.8s steps(2, end) infinite;
+    }
+
+    .town-environment__trait--debris,
+    .town-environment__trait--rings,
+    .town-environment__trait--orbit {
+        fill: none;
+        stroke: #d5c495;
+        stroke-linecap: round;
+        stroke-width: 7;
+    }
+
+    .town-environment__trait--crystal,
+    .town-environment__trait--rift {
+        fill: none;
+        stroke: #9bd5e1;
+        stroke-linecap: round;
+        stroke-width: 8;
+    }
+
+    .town-environment__trait--rift {
+        stroke: #c37bd2;
+        animation: remaster-magnetic-arc 2.8s ease-in-out infinite;
     }
 
     .town-life__resident,
@@ -1403,6 +1506,12 @@
     .town-life__limb,
     .town-life__tail,
     .town-life__wing,
+    .town-life__leaf,
+    .town-life__frost,
+    .town-life__veil,
+    .town-life__halo,
+    .town-life__horn,
+    .town-life__circuit,
     .town-life__tool,
     .town-life__spear,
     .town-life__lens {
@@ -1419,7 +1528,9 @@
 
     .town-life__ear,
     .town-life__beak,
-    .town-life__crest {
+    .town-life__crest,
+    .town-life__cap,
+    .town-life__flame {
         fill: #e6875e;
         stroke: #563f43;
         stroke-width: 2;
@@ -1475,6 +1586,52 @@
         stroke: #3d6848;
     }
 
+    .town-life[data-town-life-profile="small"] .town-life__body,
+    .town-life[data-town-life-profile="fungi"] .town-life__body {
+        fill: #d6a56b;
+        stroke: #6b4d47;
+    }
+
+    .town-life[data-town-life-profile="giant"] .town-life__body,
+    .town-life[data-town-life-profile="thermal"] .town-life__body,
+    .town-life[data-town-life-profile="demonic"] .town-life__body {
+        fill: #db7959;
+        stroke: #713f42;
+    }
+
+    .town-life[data-town-life-profile="plant"] .town-life__body,
+    .town-life[data-town-life-profile="fey"] .town-life__body {
+        fill: #86c775;
+        stroke: #3f734e;
+    }
+
+    .town-life[data-town-life-profile="polar"] .town-life__body,
+    .town-life[data-town-life-profile="angelic"] .town-life__body {
+        fill: #d5edf1;
+        stroke: #628a9a;
+    }
+
+    .town-life[data-town-life-profile="desert"] .town-life__body {
+        fill: #e2b36d;
+        stroke: #7c593c;
+    }
+
+    .town-life[data-town-life-profile="synthetic"] .town-life__body {
+        fill: #8ea9c7;
+        stroke: #405f7f;
+    }
+
+    .town-life[data-town-life-profile="eldritch"] .town-life__body {
+        fill: #946cae;
+        stroke: #443056;
+    }
+
+    .town-life[data-town-life-profile="plant"] .town-life__leaf,
+    .town-life[data-town-life-profile="fey"] .town-life__halo,
+    .town-life[data-town-life-profile="thermal"] .town-life__flame {
+        stroke: #d9ee83;
+    }
+
     .town-scene[data-town-architecture="aquatic"] .town-art,
     .town-scene[data-town-architecture="aquatic"] .town-building [data-building-art] {
         filter: saturate(1.12) hue-rotate(15deg);
@@ -1498,6 +1655,71 @@
     .town-scene[data-town-architecture="reptilian"] .town-building__wall,
     .town-scene[data-town-architecture="reptilian"] .town-art__tower {
         filter: saturate(.82) contrast(1.1);
+    }
+
+    .town-scene[data-town-architecture="compact"] .town-building [data-building-art],
+    .town-scene[data-town-architecture="monumental"] .town-art--hall,
+    .town-scene[data-town-architecture="living"] .town-art,
+    .town-scene[data-town-architecture="mycelial"] .town-art,
+    .town-scene[data-town-architecture="thermal"] .town-building [data-building-art],
+    .town-scene[data-town-architecture="polar"] .town-building [data-building-art],
+    .town-scene[data-town-architecture="desert"] .town-building [data-building-art],
+    .town-scene[data-town-architecture="infernal"] .town-art,
+    .town-scene[data-town-architecture="celestial"] .town-art,
+    .town-scene[data-town-architecture="synthetic"] .town-building [data-building-art],
+    .town-scene[data-town-architecture="eldritch"] .town-art,
+    .town-scene[data-town-architecture="hybrid"] .town-art {
+        filter: saturate(1.1);
+    }
+
+    .town-scene[data-town-architecture="living"] .town-art,
+    .town-scene[data-town-architecture="mycelial"] .town-art {
+        filter: saturate(1.2) hue-rotate(24deg);
+    }
+
+    .town-scene[data-town-architecture="thermal"] .town-art,
+    .town-scene[data-town-architecture="infernal"] .town-building [data-building-art] {
+        filter: saturate(1.16) hue-rotate(-16deg);
+    }
+
+    .town-scene[data-town-architecture="polar"] .town-art,
+    .town-scene[data-town-architecture="celestial"] .town-building [data-building-art] {
+        filter: brightness(1.12) saturate(.84);
+    }
+
+    .town-scene[data-town-architecture="synthetic"] .town-art,
+    .town-scene[data-town-architecture="eldritch"] .town-building [data-building-art] {
+        filter: saturate(1.08) hue-rotate(190deg);
+    }
+
+    .town-scene[data-town-biome="desert"] .town-scene__terrain,
+    .town-scene[data-town-biome="savanna"] .town-scene__terrain {
+        filter: hue-rotate(-32deg) saturate(.95) brightness(1.08);
+    }
+
+    .town-scene[data-town-biome="oceanic"] .town-scene__terrain,
+    .town-scene[data-town-biome="swamp"] .town-scene__terrain {
+        filter: hue-rotate(32deg) saturate(1.08);
+    }
+
+    .town-scene[data-town-biome="volcanic"] .town-scene__terrain,
+    .town-scene[data-town-biome="hellscape"] .town-scene__terrain,
+    .town-scene[data-town-biome="ashland"] .town-scene__terrain {
+        filter: hue-rotate(-52deg) saturate(.78) brightness(.86);
+    }
+
+    .town-scene[data-town-biome="tundra"] .town-scene__terrain,
+    .town-scene[data-town-biome="taiga"] .town-scene__terrain {
+        filter: hue-rotate(108deg) saturate(.75) brightness(1.12);
+    }
+
+    .town-scene[data-town-biome="eden"] .town-scene__terrain {
+        filter: saturate(1.28) brightness(1.08);
+    }
+
+    .town-scene[data-town-era="industrialized"] .town-building.is-on [data-building-art],
+    .town-scene[data-town-era="advanced"] .town-building.is-on [data-building-art] {
+        filter: saturate(1.14) brightness(1.08) drop-shadow(0 0 4px rgba(255, 220, 120, .35));
     }
 
     .town-scene.is-life-paused .town-environment *,

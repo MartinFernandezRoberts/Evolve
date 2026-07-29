@@ -1,5 +1,5 @@
 import { createTownActivityArt, createTownResidentArt } from '../assets/town-life-art.js';
-import { getPopulationVisualCount, getSpeciesArchitectureProfile, isTownActivityActive, TOWN_ACTIVITY_SLOTS, TOWN_LIFE_BUDGET, TOWN_RESIDENT_SLOTS } from '../config/town-life-config.js';
+import { getPopulationVisualCount, isTownActivityActive, TOWN_ACTIVITY_SLOTS, TOWN_LIFE_BUDGET, TOWN_RESIDENT_SLOTS } from '../config/town-life-config.js';
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
 
@@ -18,6 +18,7 @@ export class TownLifeLayer {
         this.activities = [];
         this.profileKey = '';
         this.snapshot = null;
+        this.visualProfile = null;
         this.motion = { hidden: false, lowPower: false, reducedMotion: false };
     }
 
@@ -58,18 +59,23 @@ export class TownLifeLayer {
         world.append(this.element);
     }
 
-    /** @param {import('../adapters/town-scene-contracts.js').TownSnapshot} snapshot */
-    sync(snapshot) {
+    /**
+     * @param {import('../adapters/town-scene-contracts.js').TownSnapshot} snapshot
+     * @param {import('../config/town-visual-profiles.js').TownVisualProfile} visualProfile
+     */
+    sync(snapshot, visualProfile) {
         this.snapshot = snapshot;
+        this.visualProfile = visualProfile || this.visualProfile;
         if (!this.element) {
             return;
         }
-        const profile = getSpeciesArchitectureProfile(snapshot.context.species);
-        if (profile.key !== this.profileKey) {
-            this.profileKey = profile.key;
-            this.element.dataset.townLifeProfile = profile.key;
+        const profileKey = this.visualProfile?.race?.residentArt || 'other';
+        if (profileKey !== this.profileKey) {
+            this.profileKey = profileKey;
+            this.element.dataset.townLifeProfile = profileKey;
+            this.element.dataset.townLifeCulture = this.visualProfile?.race?.culture || 'practical';
             this.residents.forEach((entry) => {
-                entry.art.innerHTML = createTownResidentArt(profile.key);
+                entry.art.innerHTML = createTownResidentArt(profileKey);
             });
         }
 
@@ -105,7 +111,7 @@ export class TownLifeLayer {
             this.element.classList.toggle('is-reduced-motion', this.motion.reducedMotion);
         }
         if (changed && this.snapshot) {
-            this.sync(this.snapshot);
+            this.sync(this.snapshot, this.visualProfile);
         }
     }
 
@@ -122,6 +128,7 @@ export class TownLifeLayer {
         this.residents = [];
         this.activities = [];
         this.snapshot = null;
+        this.visualProfile = null;
         this.profileKey = '';
     }
 

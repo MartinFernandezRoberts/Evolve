@@ -55,6 +55,21 @@ The runtime `coverage` matrix iterates every live definition in
 `classic-hidden-until-available` / `classic-unsupported`; hidden branches are
 not pre-revealed. See [EVOLUTION_SCENE.md](EVOLUTION_SCENE.md).
 
+## Checkpoint 3 update: perfiles visuales de raza y planeta
+
+| Contexto real | Fuente de ids | Cobertura gráfica | Fallback |
+| --- | --- | --- | --- |
+| Géneros y especies | `races.js:genus_def` y `races` | `RaceVisualProfileRegistry` se genera para cada id y compone arquitectura, residentes, viviendas, emblema y landmark. | Perfil adaptable visible para género o especie futura. |
+| Biomas | `races.js:biomes` | `BiomeVisualProfileRegistry` genera terreno, agua, vegetación, paleta y capa SVG original por cada id. | Terreno templado neutral. |
+| Rasgos planetarios | `races.js:planetTraits` y `city.ptrait` | `PlanetOverlayRegistry` genera overlays decorativos de mineral, toxicidad, vegetación, tormenta y luz. | Overlay neutral sin efecto mecánico. |
+| Tecnología y edificios | Era ya preparada desde `actions` y `TownSnapshot.visualBuildings` | Piel de era y densidad/actividad visual con datos ya existentes. | Era neutral para id futuro. |
+| Estación y clima | `city.calendar` / `seasons.js` | Lluvia, nieve, viento y tintes estacionales a partir de los códigos originales. | Ambiente templado si no hay código conocido. |
+
+La cobertura se genera mediante `createVisualProfileCoverageFixtures()` con las
+definiciones inyectadas por el adaptador. Incluye todos los ids, fallback,
+acuático en desierto y un snapshot vacío posterior a reset. Ninguna fila añade
+reglas ni sustituye la UI clásica.
+
 ## Rutas de acciones clásicas que deben conservarse
 
 | Intención futura | Punto clásico | Integración permitida |

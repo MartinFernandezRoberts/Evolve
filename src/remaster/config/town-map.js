@@ -1,5 +1,6 @@
 import { loc } from '../../locale.js';
 import { TOWN_SCENE_CONTRACT_VERSION } from '../adapters/town-scene-contracts.js';
+import { resolveTownVisualProfile } from './town-visual-profiles.js';
 
 // Isolated mock data for the demo. It contains no game costs, production,
 // requirements or action handlers. Visible text always comes from loc().
@@ -64,7 +65,7 @@ const mockScenarioOptions = Object.freeze({
  */
 export function createMockTownSnapshot(scenario = 'intermediate') {
     const option = mockScenarioOptions[scenario] || mockScenarioOptions.intermediate;
-    return {
+    const snapshot = {
         contractVersion: TOWN_SCENE_CONTRACT_VERSION,
         source: 'mock',
         title: loc('remaster_visual_title'),
@@ -103,4 +104,6 @@ export function createMockTownSnapshot(scenario = 'intermediate') {
             government: { id: null, label: null }
         }
     };
+    snapshot.context.visual = resolveTownVisualProfile(snapshot);
+    return snapshot;
 }
