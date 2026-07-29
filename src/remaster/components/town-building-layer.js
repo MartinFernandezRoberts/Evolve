@@ -1,4 +1,5 @@
-import { createBuildingVisualSprite } from '../assets/building-visuals.js';
+import { createKenneyBuildingVisual } from '../assets/building-visuals.js';
+import { preloadKenneyTownAssets } from '../assets/kenney-assets.js';
 import { getBuildingVisualDefinition, getBuildingVisualLevel, getDistrictVisualDensity } from '../config/building-visual-registry.js';
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
@@ -102,7 +103,7 @@ export class TownBuildingLayer {
         entry.element.setAttribute('aria-label', `${building.label}: ${building.count}`);
 
         if (level && (!entry.level || entry.level.key !== level.key)) {
-            entry.art.innerHTML = createBuildingVisualSprite(definition.sprite, level);
+            entry.art.innerHTML = createKenneyBuildingVisual(definition, level);
         }
 
         if (building.count > 0) {
@@ -146,6 +147,7 @@ export class TownBuildingLayer {
             if (state === 'hidden') {
                 return;
             }
+            preloadKenneyTownAssets([definition.asset]);
             nextIds.add(building.id);
             if (!buildingsByDistrict.has(definition.district)) {
                 buildingsByDistrict.set(definition.district, []);

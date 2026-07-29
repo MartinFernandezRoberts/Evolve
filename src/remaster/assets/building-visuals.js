@@ -3,6 +3,8 @@
  * de presentación propios; no son sprites, mapas ni arte de terceros.
  */
 
+import { getKenneyTownAsset } from './kenney-assets.js';
+
 function secondaryShapes(count, markup) {
     return Array.from({ length: count }, (_, index) => `<g class="town-building__secondary town-building__secondary--${index}">${markup(index)}</g>`).join('');
 }
@@ -46,4 +48,31 @@ export function createBuildingVisualSprite(sprite, level) {
         default:
             return '';
     }
+}
+
+/**
+ * Composes a registered building from curated, local CC0 artwork. Secondary
+ * forms are capped visual density markers, never an instance per unit.
+ * @param {{ asset: string, animations: string[] }} definition
+ * @param {{ key: string, secondary: number }} level
+ */
+export function createKenneyBuildingVisual(definition, level) {
+    const asset = getKenneyTownAsset(definition.asset);
+    const secondary = Math.min(level.secondary, 3);
+    const smoke = definition.animations.includes('smoke-rise')
+        ? '<path class="town-building__smoke town-building__smoke--raster" d="M25 -30c-12 -15 8 -20 -1 -33 18 8 5 21 15 31"/>'
+        : '';
+    const beacon = definition.animations.includes('beacon-pulse') || definition.animations.includes('reactor-pulse')
+        ? '<circle class="town-building__raster-light" cx="0" cy="-31" r="5"/>'
+        : '';
+    const crop = definition.asset === 'farmland'
+        ? `<image class="town-building__crop-raster" href="${getKenneyTownAsset(level.key === 'small' ? 'cornYoung' : 'cornMature')}" x="-48" y="-56" width="78" height="126" preserveAspectRatio="xMidYMax meet"/>`
+        : '';
+    const annexes = secondaryShapes(secondary, (index) => `<image class="town-building__secondary-raster" href="${asset}" x="${-43 + index * 30}" y="20" width="38" height="38" preserveAspectRatio="xMidYMax meet"/>`);
+
+    return `<g class="town-building__sprite town-building__sprite--kenney">
+        <ellipse class="town-building__shadow" cx="0" cy="27" rx="52" ry="14"/>
+        <image class="town-building__raster" href="${asset}" x="-54" y="-58" width="108" height="102" preserveAspectRatio="xMidYMax meet"/>
+        ${crop}${annexes}${beacon}${smoke}
+    </g>`;
 }

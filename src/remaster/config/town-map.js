@@ -123,13 +123,41 @@ const mockDistricts = [
     }
 ];
 
+const mockVisualBuildings = Object.freeze([
+    { id: 'basic_housing', district: 'housing', label: 'Viviendas de muestra', count: 7, on: null, unlocked: true, affordable: true },
+    { id: 'farm', district: 'agriculture', label: 'Granja de muestra', count: 4, on: null, unlocked: true, affordable: true },
+    { id: 'lumber_yard', district: 'forest', label: 'Aserradero de muestra', count: 2, on: null, unlocked: true, affordable: true },
+    { id: 'rock_quarry', district: 'quarry', label: 'Cantera de muestra', count: 3, on: 3, unlocked: true, affordable: true },
+    { id: 'mine', district: 'quarry', label: 'Mina de muestra', count: 1, on: 0, unlocked: true, affordable: true },
+    { id: 'library', district: 'science', label: 'Biblioteca de muestra', count: 2, on: null, unlocked: true, affordable: true },
+    { id: 'university', district: 'science', label: 'Universidad disponible', count: 0, on: null, unlocked: true, affordable: false },
+    { id: 'temple', district: 'religion', label: 'Templo de muestra', count: 1, on: null, unlocked: true, affordable: true },
+    { id: 'garrison', district: 'military', label: 'Cuartel de muestra', count: 2, on: 2, unlocked: true, affordable: true },
+    { id: 'foundry', district: 'industry', label: 'Fundición de muestra', count: 3, on: 2, unlocked: true, affordable: true },
+    { id: 'factory', district: 'industry', label: 'Fábrica de muestra', count: 1, on: 0, unlocked: true, affordable: true },
+    { id: 'coal_power', district: 'industry', label: 'Central de carbón', count: 1, on: 1, unlocked: true, affordable: true },
+    { id: 'oil_power', district: 'industry', label: 'Central de petróleo bloqueada', count: 0, on: 0, unlocked: false, affordable: null },
+    { id: 'fission_power', district: 'industry', label: 'Central de fisión bloqueada', count: 0, on: 0, unlocked: false, affordable: null }
+]);
+
+// Variantes de inspección aisladas; no se importan en la interfaz de partida.
+const mockScenarioOptions = Object.freeze({
+    new: { population: 0, counts: { basic_housing: 0 }, onlyCounts: true, unlocked: ['basic_housing'], species: { id: 'mock', label: 'Muestra', type: 'humanoid' } },
+    small: { population: 6, counts: { basic_housing: 1, farm: 1 }, onlyCounts: true, unlocked: ['basic_housing', 'farm'], species: { id: 'mock', label: 'Muestra', type: 'humanoid' } },
+    intermediate: { population: 32, counts: {}, unlocked: null, species: { id: 'mock', label: 'Muestra', type: 'humanoid' } },
+    industrial: { population: 240, counts: { basic_housing: 48, farm: 15, lumber_yard: 8, rock_quarry: 11, mine: 9, library: 5, university: 3, temple: 4, garrison: 6, foundry: 13, factory: 10, coal_power: 4, oil_power: 2 }, unlocked: null, technologies: [{ id: 'electricity', level: 1 }], species: { id: 'mock', label: 'Muestra', type: 'humanoid' } },
+    aquatic: { population: 32, counts: {}, unlocked: null, species: { id: 'octigoran', label: 'Octigoran de muestra', type: 'aquatic' } }
+});
+
 /**
  * Crea un snapshot nuevo para que la demo no pueda modificar las plantillas.
  * Un adaptador real deberá devolver este mismo contrato, sin fórmulas en la UI.
  *
- * @returns {import('../adapters/town-scene-contracts.js').TownSceneSnapshot}
+ * @param {'new'|'small'|'intermediate'|'industrial'|'aquatic'} [scenario]
+ * @returns {import('../adapters/town-scene-contracts.js').TownSnapshot}
  */
-export function createMockTownSnapshot() {
+export function createMockTownSnapshot(scenario = 'intermediate') {
+    const option = mockScenarioOptions[scenario] || mockScenarioOptions.intermediate;
     return {
         contractVersion: TOWN_SCENE_CONTRACT_VERSION,
         source: 'mock',
@@ -141,33 +169,22 @@ export function createMockTownSnapshot() {
             position: { ...district.position },
             buildings: []
         })),
-        visualBuildings: [
-            { id: 'basic_housing', district: 'housing', label: 'Viviendas de muestra', count: 7, on: null, unlocked: true, affordable: true },
-            { id: 'farm', district: 'agriculture', label: 'Granja de muestra', count: 4, on: null, unlocked: true, affordable: true },
-            { id: 'lumber_yard', district: 'forest', label: 'Aserradero de muestra', count: 2, on: null, unlocked: true, affordable: true },
-            { id: 'rock_quarry', district: 'quarry', label: 'Cantera de muestra', count: 3, on: 3, unlocked: true, affordable: true },
-            { id: 'mine', district: 'quarry', label: 'Mina de muestra', count: 1, on: 0, unlocked: true, affordable: true },
-            { id: 'library', district: 'science', label: 'Biblioteca de muestra', count: 2, on: null, unlocked: true, affordable: true },
-            { id: 'university', district: 'science', label: 'Universidad disponible', count: 0, on: null, unlocked: true, affordable: false },
-            { id: 'temple', district: 'religion', label: 'Templo de muestra', count: 1, on: null, unlocked: true, affordable: true },
-            { id: 'garrison', district: 'military', label: 'Cuartel de muestra', count: 2, on: 2, unlocked: true, affordable: true },
-            { id: 'foundry', district: 'industry', label: 'Fundición de muestra', count: 3, on: 2, unlocked: true, affordable: true },
-            { id: 'factory', district: 'industry', label: 'Fábrica de muestra', count: 1, on: 0, unlocked: true, affordable: true },
-            { id: 'coal_power', district: 'industry', label: 'Central de carbón', count: 1, on: 1, unlocked: true, affordable: true },
-            { id: 'oil_power', district: 'industry', label: 'Central de petróleo bloqueada', count: 0, on: 0, unlocked: false, affordable: null },
-            { id: 'fission_power', district: 'industry', label: 'Central de fisión bloqueada', count: 0, on: 0, unlocked: false, affordable: null }
-        ],
+        visualBuildings: mockVisualBuildings.map((building) => {
+            const count = Object.prototype.hasOwnProperty.call(option.counts, building.id) ? option.counts[building.id] : (option.onlyCounts ? 0 : building.count);
+            const unlocked = option.unlocked ? option.unlocked.includes(building.id) : building.unlocked;
+            return { ...building, count, unlocked, locked: !unlocked };
+        }),
         context: {
-            species: { id: 'mock', label: 'Muestra', type: 'aquatic' },
+            species: { ...option.species },
             biome: { id: 'grassland', label: 'Pradera' },
             planet: 'Mundo de demostración',
             season: 0,
             weather: 0,
             environment: { season: 0, weather: 0, temperature: 1, wind: 0, day: 42, planetTraits: [] },
-            population: { amount: 32, max: 50, label: 'Habitantes' },
+            population: { amount: option.population, max: 500, label: 'Habitantes' },
             workers: [],
             buildings: [],
-            technologies: [],
+            technologies: (option.technologies || []).map((technology) => ({ ...technology })),
             energy: { available: null, powered: null },
             morale: { current: null, potential: null },
             government: { id: null, label: null }

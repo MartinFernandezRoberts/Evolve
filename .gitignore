@@ -8,3 +8,5 @@ docs
 dist
 *.map
 evolve/remaster-demo.js
+# Generated from src/remaster/assets/kenney by buildRemasterAssets.js.
+evolve/remaster-assets/

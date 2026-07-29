@@ -1,10 +1,12 @@
 import { isTownSceneSnapshot } from '../adapters/town-scene-contracts.js';
+import { preloadKenneyTownAssets } from '../assets/kenney-assets.js';
 import { createTownBackdrop } from '../assets/town-art.js';
 import { TownBuildingLayer } from '../components/town-building-layer.js';
 import { TownEnvironmentLayer } from '../components/town-environment-layer.js';
 import { TownLifeLayer } from '../components/town-life-layer.js';
 import { createTownNode, updateTownNode, updateTownNodeSelection } from '../components/town-node.js';
 import { renderTownPanel } from '../components/town-panel.js';
+import { resolveSettlementVisualProgression } from '../config/visual-progression.js';
 
 const minimumZoom = 0.65;
 const maximumZoom = 1.8;
@@ -67,12 +69,15 @@ export class TownScene {
         this.boundZoomIn = () => this.setZoom(this.zoom + zoomStep);
         this.boundZoomOut = () => this.setZoom(this.zoom - zoomStep);
         this.boundResetView = () => this.resetView();
+        this.boundNavigatorClick = this.handleNavigatorClick.bind(this);
         this.motion = {
             hidden: typeof document !== 'undefined' && document.hidden,
             lowPower: detectLowPowerDevice(),
             reducedMotion: false
         };
         this.reducedMotionQuery = null;
+        this.metricsEnabled = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('remasterMetrics');
+        this.metrics = { updateMs: 0, nodeCount: 0, heapMb: null };
     }
 
     mount() {
@@ -97,10 +102,12 @@ export class TownScene {
                             <span class="town-scene__zoom-label" aria-live="polite"></span>
                         </div>
                         <p class="town-scene__map-hint">${text('panHint', 'Drag the terrain to pan. Use the wheel or buttons to zoom.')}</p>
+                        <nav class="town-scene__navigator" aria-label="${text('mapNavigation', 'District navigator')}"></nav>
                         <svg class="town-scene__map" viewBox="0 0 1600 900" role="group" aria-label="${text('mapLabel', 'Interactive town map')}" tabindex="0">
                             <g class="town-scene__world"></g>
                         </svg>
                         <div id="town-scene-tooltip" class="town-scene__tooltip" role="tooltip" hidden></div>
+                        ${this.metricsEnabled ? '<output class="town-scene__metrics" aria-live="polite"></output>' : ''}
                     </div>
                     <aside class="town-scene__panel" aria-live="polite"></aside>
                 </div>
@@ -117,6 +124,8 @@ export class TownScene {
         this.panel = this.root.querySelector('.town-scene__panel');
         this.tooltip = this.root.querySelector('.town-scene__tooltip');
         this.zoomLabel = this.root.querySelector('.town-scene__zoom-label');
+        this.navigator = this.root.querySelector('.town-scene__navigator');
+        this.metricsOutput = this.root.querySelector('.town-scene__metrics');
 
         if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
             this.reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -129,6 +138,7 @@ export class TownScene {
             }
         }
 
+        preloadKenneyTownAssets();
         this.renderStructure();
         this.updateSnapshotData(true);
         this.bindInteractions();
@@ -188,12 +198,14 @@ export class TownScene {
             this.nodes.push(node);
             this.nodeById.set(district.id, node);
         });
+        this.renderNavigator();
         this.environmentLayer.mount(this.world);
         this.lifeLayer.mount(this.world);
         this.renderTransform();
     }
 
     updateSnapshotData(forcePanel) {
+        const startedAt = this.metricsEnabled && typeof performance !== 'undefined' ? performance.now() : 0;
         const texts = this.snapshot.texts || {};
         this.eyebrow.textContent = this.snapshot.source === 'engine' ? (texts.visualTitle || 'Visual Remaster') : 'Mock prototype';
         this.title.textContent = this.snapshot.title;
@@ -207,12 +219,15 @@ export class TownScene {
             }
         });
         this.buildingLayer.sync(this.snapshot, this.nodeById);
+        const progression = resolveSettlementVisualProgression(this.snapshot);
+        this.sceneElement.dataset.townGrowth = progression.id;
         const architecture = this.environmentLayer.sync(this.snapshot);
         this.sceneElement.dataset.townArchitecture = architecture;
         this.lifeLayer.sync(this.snapshot);
         this.applyMotionState();
         updateTownNodeSelection(this.nodes, this.selectedId);
         this.renderSelectedPanel(forcePanel);
+        this.updateMetrics(startedAt);
     }
 
     /** Actualiza los comandos sin hacer que la escena conozca el motor. */
@@ -323,6 +338,7 @@ export class TownScene {
         this.zoomInButton.addEventListener('click', this.boundZoomIn);
         this.zoomOutButton.addEventListener('click', this.boundZoomOut);
         this.resetViewButton.addEventListener('click', this.boundResetView);
+        this.navigator.addEventListener('click', this.boundNavigatorClick);
         this.svg.addEventListener('wheel', this.boundWheel, { passive: false });
         this.svg.addEventListener('pointerdown', this.boundPointerDown);
         this.svg.addEventListener('pointermove', this.boundPointerMove);
@@ -385,6 +401,66 @@ export class TownScene {
         }
     }
 
+    handleNavigatorClick(event) {
+        const button = event.target.closest('[data-town-navigate]');
+        if (!button) {
+            return;
+        }
+        this.focusDistrict(button.dataset.townNavigate);
+    }
+
+    renderNavigator() {
+        if (!this.navigator) {
+            return;
+        }
+        this.navigator.replaceChildren(...this.snapshot.districts.map((district) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.dataset.townNavigate = district.id;
+            button.textContent = district.label;
+            button.title = district.label;
+            return button;
+        }));
+        this.syncNavigatorSelection();
+    }
+
+    syncNavigatorSelection() {
+        this.navigator?.querySelectorAll('[data-town-navigate]').forEach((button) => {
+            const selected = button.dataset.townNavigate === this.selectedId;
+            button.classList.toggle('is-selected', selected);
+            button.setAttribute('aria-current', selected ? 'true' : 'false');
+        });
+    }
+
+    /** Centres the selected district; it changes view state only. */
+    focusDistrict(id) {
+        const district = this.snapshot.districts.find((candidate) => candidate.id === id);
+        if (!district) {
+            return;
+        }
+        this.zoom = Math.max(this.zoom, 1);
+        this.pan = {
+            x: (mapWidth / 2) - (district.position.x * this.zoom),
+            y: 450 - (district.position.y * this.zoom)
+        };
+        this.selectDistrict(id);
+        this.renderTransform();
+        this.nodeById.get(id)?.focus({ preventScroll: true });
+    }
+
+    updateMetrics(startedAt) {
+        if (!this.metricsEnabled || !this.metricsOutput || !startedAt || typeof performance === 'undefined') {
+            return;
+        }
+        this.metrics.updateMs = performance.now() - startedAt;
+        this.metrics.nodeCount = this.world.querySelectorAll('*').length;
+        const memory = performance.memory;
+        this.metrics.heapMb = memory && typeof memory.usedJSHeapSize === 'number' ? memory.usedJSHeapSize / 1048576 : null;
+        const heap = this.metrics.heapMb === null ? 'n/a' : `${this.metrics.heapMb.toFixed(1)} MB`;
+        this.metricsOutput.value = `update ${this.metrics.updateMs.toFixed(1)} ms · ${this.metrics.nodeCount} SVG nodes · heap ${heap}`;
+        this.metricsOutput.textContent = this.metricsOutput.value;
+    }
+
     setZoom(nextZoom) {
         this.zoom = clamp(nextZoom, minimumZoom, maximumZoom);
         this.renderTransform();
@@ -410,6 +486,7 @@ export class TownScene {
         this.selectedBuildingId = '';
         this.panelKey = '';
         updateTownNodeSelection(this.nodes, district.id);
+        this.syncNavigatorSelection();
         this.syncResourceDisplay();
         this.renderSelectedPanel(true);
         if (notify) {
@@ -427,6 +504,7 @@ export class TownScene {
         this.selectedBuildingId = building.id;
         this.panelKey = '';
         updateTownNodeSelection(this.nodes, building.district);
+        this.syncNavigatorSelection();
         this.syncResourceDisplay();
         this.renderSelectedPanel(true);
     }
@@ -468,6 +546,7 @@ export class TownScene {
         this.zoomInButton?.removeEventListener('click', this.boundZoomIn);
         this.zoomOutButton?.removeEventListener('click', this.boundZoomOut);
         this.resetViewButton?.removeEventListener('click', this.boundResetView);
+        this.navigator?.removeEventListener('click', this.boundNavigatorClick);
         this.root.replaceChildren();
         this.nodes = [];
         this.nodeById.clear();

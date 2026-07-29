@@ -41,6 +41,7 @@ Es inspiración de lenguaje visual general, no una recreación de una obra concr
 
 ## Producción de assets
 
-- Priorizar SVG y CSS originales en el MVP. Cualquier bitmap generado debe ser nuevo para el proyecto, incluir fuente/prompt/licencia en el manifest y no contener marcas, personajes ni elementos protegidos de terceros.
+- Priorizar composiciÃ³n SVG/CSS original sobre un subconjunto local de tiles CC0 curados de Kenney. No se cargan packs ni URLs externas en tiempo de ejecuciÃ³n; las fuentes, licencias y checksums viven en `assets/kenney/` y se describen en `ASSET_PIPELINE.md`.
+- Cualquier bitmap generado debe ser nuevo para el proyecto, incluir fuente/prompt/licencia en el manifest y no contener marcas, personajes ni elementos protegidos de terceros.
 - Guardar fuentes y manifiestos en la zona fuente del remaster; el build decide sus artefactos de distribución.
 - Revisar cada asset por legibilidad a escala pequeña, contraste y tamaño antes de incluirlo.

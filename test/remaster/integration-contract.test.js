@@ -3,6 +3,10 @@ import { assertProductionBundleHasNoMocks } from '../../buildRemasterValidation.
 import { createGameActionBridge } from '../../src/remaster/adapters/game-action-bridge.js';
 import { captureTownActionParityState, captureTownSaveParityState, compareTownActionParity } from '../../src/remaster/adapters/town-action-parity-harness.js';
 import { getRemasterPreferences, migrateLegacyRemasterPreferences, setRemasterEnabled, setRemasterView } from '../../src/remaster/config/remaster-preferences.js';
+import { resolveSettlementVisualProgression } from '../../src/remaster/config/visual-progression.js';
+import { createMockTownSnapshot } from '../../src/remaster/config/town-map.js';
+import { getPopulationVisualCount, getSpeciesArchitectureProfile } from '../../src/remaster/config/town-life-config.js';
+import { KenneyTownAssets } from '../../src/remaster/assets/kenney-assets.js';
 
 function createStorage() {
     const values = new Map();
@@ -88,8 +92,44 @@ function testMockImportBuildGuard() {
     assert.throws(() => assertProductionBundleHasNoMocks(forbidden), /datos mock/);
 }
 
+function visualSnapshot(population, technologies = [], visualBuildings = []) {
+    return {
+        context: { population: { amount: population }, technologies },
+        visualBuildings
+    };
+}
+
+function testVisualProgressionUsesOnlySnapshotSignals() {
+    assert.equal(resolveSettlementVisualProgression(visualSnapshot(0)).id, 'outpost');
+    assert.equal(resolveSettlementVisualProgression(visualSnapshot(12)).id, 'village');
+    assert.equal(resolveSettlementVisualProgression(visualSnapshot(61)).id, 'town');
+    assert.equal(resolveSettlementVisualProgression(visualSnapshot(1, [{ id: 'electricity', level: 1 }])).id, 'industrial');
+    assert.equal(resolveSettlementVisualProgression(visualSnapshot(1, [{ id: 'fission', level: 1 }], [{ id: 'fission_power', district: 'industry', count: 1 }])).id, 'electrified');
+}
+
+function testVisualScenarioMatrix() {
+    const fresh = createMockTownSnapshot('new');
+    const small = createMockTownSnapshot('small');
+    const intermediate = createMockTownSnapshot('intermediate');
+    const industrial = createMockTownSnapshot('industrial');
+    const aquatic = createMockTownSnapshot('aquatic');
+
+    assert.equal(fresh.visualBuildings.every((building) => building.count === 0), true);
+    assert.equal(getPopulationVisualCount(small.context.population.amount), 2);
+    assert.equal(getPopulationVisualCount(intermediate.context.population.amount), 6);
+    assert.equal(resolveSettlementVisualProgression(industrial).id, 'industrial');
+    assert.equal(getSpeciesArchitectureProfile(aquatic.context.species).key, 'aquatic');
+}
+
+function testCuratedAssetsUseLocalBuildPaths() {
+    assert.equal(Object.values(KenneyTownAssets).every((asset) => asset.startsWith('evolve/remaster-assets/kenney/')), true);
+}
+
 testPreferencesDoNotMutateSaveSchema();
 testActionBridgeOnlyDelegates();
 testParityReducers();
 testMockImportBuildGuard();
+testVisualProgressionUsesOnlySnapshotSignals();
+testVisualScenarioMatrix();
+testCuratedAssetsUseLocalBuildPaths();
 console.log('remaster integration contract tests passed');

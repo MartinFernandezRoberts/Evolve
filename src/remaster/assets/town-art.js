@@ -1,3 +1,5 @@
+import { KenneyTownAssets } from './kenney-assets.js';
+
 /**
  * Formas SVG originales y temporales del prototipo. No proceden de assets
  * externos ni intentan reproducir mapas, personajes o marcas de terceros.
@@ -27,7 +29,20 @@ export function createTownBackdrop() {
             </filter>
         </defs>
         <rect class="town-scene__terrain" width="1600" height="900" rx="48" fill="url(#town-grass)" />
+        <g class="town-scene__kenney-ground" aria-hidden="true">
+            <image href="${KenneyTownAssets.grassPlatform}" x="42" y="416" width="236" height="137" />
+            <image href="${KenneyTownAssets.grassWhole}" x="1280" y="478" width="236" height="137" />
+            <image href="${KenneyTownAssets.grassWhole}" x="865" y="92" width="236" height="137" />
+        </g>
+        <rect class="town-scene__terrain-shade" width="1600" height="900" rx="48" fill="url(#town-grass)" />
         <rect width="1600" height="900" rx="48" fill="url(#town-grain)" />
+        <g class="town-scene__kenney-water" aria-hidden="true">
+            <image href="${KenneyTownAssets.water}" x="-60" y="642" width="280" height="160" preserveAspectRatio="none" />
+            <image href="${KenneyTownAssets.water}" x="180" y="675" width="310" height="150" preserveAspectRatio="none" />
+            <image href="${KenneyTownAssets.water}" x="460" y="670" width="340" height="170" preserveAspectRatio="none" />
+            <image href="${KenneyTownAssets.water}" x="770" y="625" width="390" height="190" preserveAspectRatio="none" />
+            <image href="${KenneyTownAssets.water}" x="1130" y="655" width="520" height="180" preserveAspectRatio="none" />
+        </g>
         <path class="town-scene__water" d="M-40 636C166 548 235 704 416 650c182-54 245 94 412 52 211-53 350-178 812-14v292H-40z" fill="url(#town-water)" />
         <path class="town-scene__water-line" d="M-18 688c168-72 257 58 425 5 194-61 261 78 451 36 190-42 345-155 764-11" />
         <path class="town-scene__mountain town-scene__mountain--left" d="M-30 180 118 48l115 125 102-95 154 160-519 58z" fill="url(#town-mountain)" />
@@ -45,11 +60,18 @@ export function createTownBackdrop() {
             <path d="M789 426c129 57 182 68 260 78" />
             <path d="M791 426c-38 135-92 203-181 276" />
         </g>
+        <g class="town-scene__kenney-roads" aria-hidden="true">
+            <image href="${KenneyTownAssets.crossroad}" x="722" y="360" width="137" height="98" />
+            <image href="${KenneyTownAssets.roadTurnNorthEast}" x="514" y="278" width="110" height="80" />
+            <image href="${KenneyTownAssets.roadTurnEastSouth}" x="1037" y="452" width="110" height="80" />
+            <image href="${KenneyTownAssets.roadStraight}" x="340" y="485" width="105" height="76" />
+            <image href="${KenneyTownAssets.roadStraight}" x="1128" y="576" width="105" height="76" />
+        </g>
         <g class="town-scene__trees" aria-hidden="true">
-            <g transform="translate(180 333)"><path d="M0 38 20 0l21 38z" /><path d="M8 52 21 16l15 36z" /><rect x="18" y="48" width="6" height="15" /></g>
-            <g transform="translate(244 432) scale(.8)"><path d="M0 38 20 0l21 38z" /><path d="M8 52 21 16l15 36z" /><rect x="18" y="48" width="6" height="15" /></g>
-            <g transform="translate(1400 406) scale(.92)"><path d="M0 38 20 0l21 38z" /><path d="M8 52 21 16l15 36z" /><rect x="18" y="48" width="6" height="15" /></g>
-            <g transform="translate(1370 545) scale(.72)"><path d="M0 38 20 0l21 38z" /><path d="M8 52 21 16l15 36z" /><rect x="18" y="48" width="6" height="15" /></g>
+            <image href="${KenneyTownAssets.treeTall}" x="145" y="270" width="84" height="108" />
+            <image href="${KenneyTownAssets.treeShort}" x="236" y="391" width="60" height="75" />
+            <image href="${KenneyTownAssets.treeTall}" x="1352" y="338" width="82" height="106" />
+            <image href="${KenneyTownAssets.treeShort}" x="1335" y="514" width="61" height="76" />
         </g>
         <g class="town-scene__rocks" aria-hidden="true">
             <path d="m252 635 26-18 34 14-7 30-42 1zM1314 304l22-17 39 15-7 29-44 2zM965 183l20-11 28 16-8 22-36-2z" />
@@ -92,4 +114,38 @@ export function createDistrictArt(district) {
         default:
             return `<g class="town-art town-art--hall"><ellipse class="town-art__shadow" cx="0" cy="39" rx="88" ry="23"/><path fill="#d5c18e" d="M-68 5h136v39H-68z"/><path fill="#ad5e45" d="m-79 5 79-47L79 5z"/><path class="town-art__tower" d="M-16 5V-57h32V5z"/><path fill="#e2bb6d" d="m-28-57 28-25 28 25z"/><path class="town-art__window" d="M-48 17h12v14h-12zM36 17h12v14H36zM-5-42H5v16H-5z"/><path class="town-art__fountain" d="M-14 53c7-17 21-17 28 0z"/></g>`;
     }
+}
+
+/**
+ * District anchors for the CC0 asset pass. They are fixed, original map
+ * composition markers rather than game buildings; real structures are still
+ * rendered separately by TownBuildingLayer from TownSnapshot.
+ * @param {import('../adapters/town-scene-contracts.js').TownDistrict} district
+ * @returns {string}
+ */
+export function createKenneyDistrictArt(district) {
+    const assetByKind = {
+        hall: 'civicRed',
+        homes: 'civicAmber',
+        farm: 'farmland',
+        lumber: 'civicAmber',
+        quarry: 'industryStone',
+        observatory: 'civicRed',
+        shrine: 'civicRed',
+        workshop: 'industryRed',
+        council: 'civicAmber',
+        fort: 'industryStone'
+    };
+    const asset = KenneyTownAssets[assetByKind[district.art] || 'civicAmber'];
+    const trees = district.art === 'lumber'
+        ? `<image class="town-art__kenney-tree" href="${KenneyTownAssets.treeTall}" x="-78" y="-82" width="58" height="84"/><image class="town-art__kenney-tree" href="${KenneyTownAssets.treeShort}" x="43" y="-24" width="45" height="58"/>`
+        : '';
+    const crops = district.art === 'farm'
+        ? `<image class="town-art__kenney-crop" href="${KenneyTownAssets.cornMature}" x="-50" y="-92" width="84" height="130" preserveAspectRatio="xMidYMax meet"/>`
+        : '';
+    return `<g class="town-art town-art--kenney town-art--${district.art}">
+        <ellipse class="town-art__shadow" cx="0" cy="35" rx="77" ry="21"/>
+        <image class="town-art__kenney-building" href="${asset}" x="-76" y="-85" width="152" height="125" preserveAspectRatio="xMidYMax meet"/>
+        ${trees}${crops}
+    </g>`;
 }

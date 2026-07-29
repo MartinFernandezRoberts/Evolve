@@ -1,3 +1,4 @@
 evolve/* -diff
 evolve/evolve.js diff
 wiki/* -diff
+src/remaster/assets/kenney/**/LICENSE.txt -whitespace

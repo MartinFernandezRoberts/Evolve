@@ -1,4 +1,4 @@
-import { createDistrictArt } from '../assets/town-art.js';
+import { createKenneyDistrictArt } from '../assets/town-art.js';
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
 
@@ -33,7 +33,7 @@ export function createTownNode(district, handlers) {
     node.innerHTML = `
         <title>${escapeMarkup(district.label)}</title>
         <ellipse class="town-node__focus" cx="0" cy="24" rx="100" ry="58" />
-        <g filter="url(#town-shadow)">${createDistrictArt(district)}</g>
+        <g filter="url(#town-shadow)">${createKenneyDistrictArt(district)}</g>
         <g class="town-node__building-layer" data-town-building-layer></g>
         <g class="town-node__marker" transform="translate(58 -38)">
             <circle r="18" fill="${district.accent}" />

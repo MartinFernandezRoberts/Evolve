@@ -4,7 +4,12 @@
 
 `remaster-demo.html` es una página aislada para evaluar la dirección visual. Sólo consume `src/remaster/config/town-map.js`, que contiene datos mock explícitos. No importa módulos del motor, no lee/escribe `localStorage`, no modifica `global`, no compra edificios y no altera guardados.
 
-Los SVG del mapa y de los edificios temporales son formas originales escritas para este fork. No se han descargado ni incorporado assets de terceros.
+La composición, rutas, overlays SVG y CSS son originales del fork. La escena
+usa además un subconjunto mínimo de assets CC0 locales de Kenney para terreno,
+caminos, edificios, granja y UI. Sus licencias, créditos, páginas de origen y
+checksums están en `ASSET_PIPELINE.md`, `CREDITS.md` y
+`assets/kenney/manifests/assets.json`; no se descarga ningún asset en tiempo
+de ejecución.
 
 ## Abrir la demo
 
@@ -16,6 +21,11 @@ npm run serve
 ```
 
 Abrir `http://localhost:4400/remaster-demo.html` (o el puerto informado por `servehere`). La interfaz clásica sigue en `http://localhost:4400/index.html`.
+
+La demo admite `?scenario=new`, `small`, `intermediate`, `industrial` o
+`aquatic` para revisar los estados mock aislados. La matriz completa está en
+`TEST_MATRIX.md`; el diagnóstico opcional se activa con
+`?remasterMetrics=1`.
 
 La página necesita el bundle generado `evolve/remaster-demo.js`; `npm run build-win` lo crea desde `src/remaster/demo.js`.
 

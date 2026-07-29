@@ -1,4 +1,5 @@
 const { assertProductionBundleHasNoMocks } = require("./buildRemasterValidation.js");
+const { copyRemasterAssets } = require("./buildRemasterAssets.js");
 
 require("esbuild")
   .build({
@@ -12,5 +13,8 @@ require("esbuild")
     metafile: true,
     outdir: "evolve",
   })
-  .then(assertProductionBundleHasNoMocks)
+  .then((result) => {
+    assertProductionBundleHasNoMocks(result);
+    copyRemasterAssets();
+  })
   .catch(() => process.exit(1));
