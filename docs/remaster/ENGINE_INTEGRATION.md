@@ -49,6 +49,13 @@ temporizadores.
 5. La vista gráfica añade `visual-remaster-scene` a `#city` y oculta sólo sus
    tarjetas de ciudad; la vista clásica las vuelve a mostrar de inmediato.
 
+Al pasar por Sentience, Vue puede insertar `#city` un frame después del primer
+`drawCity()`. El puente conserva un único reintento con
+`requestAnimationFrame` mientras el feature flag está activo. Si el host no
+aparece, no se reintenta; al cambiar de pestaña o dejar de existir la ciudad el
+frame pendiente se cancela. Esto evita que una transición válida a Civilización
+desmonte permanentemente la escena y no crea un segundo loop.
+
 El gestor `src/remaster/scene/town-scene-manager.js` limita las lecturas a una
 vez por segundo, omite el documento oculto y destruye SVG, listeners de clic,
 visibilidad, foco y restauración de página, además del temporizador, al apagar

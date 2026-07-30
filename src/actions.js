@@ -6543,8 +6543,52 @@ const phaseVisualStateReader = Object.freeze({
 });
 
 /** Integra el router sin exponer `global` a ningún módulo bajo remaster/. */
+// `loadTab('mTabCivil')` crea `#city` a través de Vue. Durante la transición
+// de Sentience el primer dibujo puede suceder antes de que exista ese host, por
+// lo que se conserva un único frame cancelable sólo con el flag visual activo.
+let remasterCityHostRetry = null;
+
+function cancelRemasterCityHostRetry(){
+    if (remasterCityHostRetry === null){
+        return;
+    }
+    if (typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function'){
+        window.cancelAnimationFrame(remasterCityHostRetry);
+    }
+    else if (typeof window !== 'undefined') {
+        window.clearTimeout(remasterCityHostRetry);
+    }
+    remasterCityHostRetry = null;
+}
+
+function scheduleRemasterCityHostRetry(redraw){
+    if (remasterCityHostRetry !== null || typeof redraw !== 'function'){
+        return;
+    }
+    const retry = () => {
+        remasterCityHostRetry = null;
+        if (document.getElementById('city')){
+            redraw();
+        }
+    };
+    remasterCityHostRetry = typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function'
+        ? window.requestAnimationFrame(retry)
+        : window.setTimeout(retry, 0);
+}
+
 function syncRemasterPhaseForHost(host, redraw){
     const remasterPreferences = getRemasterPreferences();
+    if (!host){
+        destroyRemasterPhaseScene();
+        if (remasterPreferences.enabled){
+            scheduleRemasterCityHostRetry(redraw);
+        }
+        else {
+            cancelRemasterCityHostRetry();
+        }
+        return;
+    }
+    cancelRemasterCityHostRetry();
     syncRemasterPhaseScene({
         host,
         enabled: remasterPreferences.enabled,
@@ -6560,10 +6604,12 @@ function syncRemasterPhaseForHost(host, redraw){
 
 export function drawCity(){
     if (!global.settings.tabLoad && (global.settings.civTabs !== 1 || global.settings.spaceTabs !== 0)){
+        cancelRemasterCityHostRetry();
         destroyRemasterPhaseScene();
         return;
     }
     if (!global.settings.showCity){
+        cancelRemasterCityHostRetry();
         destroyRemasterPhaseScene();
         return;
     }
